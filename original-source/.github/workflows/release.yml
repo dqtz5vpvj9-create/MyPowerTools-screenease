@@ -1,0 +1,158 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag, for example v0.1.0. Leave empty to use a run-number tag.
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  package:
+    name: Build Windows package
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Resolve release tag
+        shell: pwsh
+        run: |
+          $tag = '${{ github.event.inputs.version }}'
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+              if ('${{ github.ref_type }}' -eq 'tag') {
+                  $tag = '${{ github.ref_name }}'
+              } else {
+                  $tag = 'v0.0.0-ci.${{ github.run_number }}'
+              }
+          }
+
+          if (-not $tag.StartsWith('v')) {
+              $tag = "v$tag"
+          }
+
+          "RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ZIP_NAME=ScreenEase-$tag-win-x64.zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore .\ScreenEase.sln
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build .\ScreenEase.sln --configuration Release --no-restore
+
+      - name: Test
+        shell: pwsh
+        run: dotnet run --project .\tests\ScreenEase.Tests\ScreenEase.Tests.csproj --configuration Release --no-build
+
+      - name: Publish projects
+        shell: pwsh
+        run: |
+          $publishRoot = Join-Path $PWD 'artifacts\publish'
+          $packageRoot = Join-Path $PWD 'artifacts\package\ScreenEase'
+
+          if (Test-Path -LiteralPath 'artifacts') {
+              Remove-Item -LiteralPath 'artifacts' -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Path $publishRoot -Force | Out-Null
+          New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
+
+          dotnet publish .\src\ScreenEase.CoreService\ScreenEase.CoreService.csproj --configuration Release --runtime win-x64 --self-contained false --output (Join-Path $publishRoot 'ScreenEase.CoreService')
+          dotnet publish .\src\ScreenEase.Desktop\ScreenEase.Desktop.csproj --configuration Release --runtime win-x64 --self-contained false --output (Join-Path $publishRoot 'ScreenEase.Desktop')
+          dotnet publish .\src\ScreenEase.NativeHost\ScreenEase.NativeHost.csproj --configuration Release --runtime win-x64 --self-contained false --output (Join-Path $publishRoot 'ScreenEase.NativeHost')
+
+          Copy-Item -LiteralPath (Join-Path $publishRoot 'ScreenEase.CoreService') -Destination (Join-Path $packageRoot 'ScreenEase.CoreService') -Recurse
+          Copy-Item -LiteralPath (Join-Path $publishRoot 'ScreenEase.Desktop') -Destination (Join-Path $packageRoot 'ScreenEase.Desktop') -Recurse
+          Copy-Item -LiteralPath (Join-Path $publishRoot 'ScreenEase.NativeHost') -Destination (Join-Path $packageRoot 'ScreenEase.NativeHost') -Recurse
+          Copy-Item -LiteralPath '.\README.md' -Destination $packageRoot
+          Copy-Item -LiteralPath '.\LICENSE' -Destination $packageRoot
+          Copy-Item -LiteralPath '.\docs' -Destination (Join-Path $packageRoot 'docs') -Recurse
+
+      - name: Add launch scripts
+        shell: pwsh
+        run: |
+          $packageRoot = Join-Path $PWD 'artifacts\package\ScreenEase'
+
+          @(
+              '$ErrorActionPreference = ''Stop'''
+              '$root = Split-Path -Parent $MyInvocation.MyCommand.Path'
+              '$env:ScreenEase__Driver = ''windows'''
+              '$env:ScreenEase__SettingsPath = Join-Path $root ''settings.json'''
+              '& (Join-Path $root ''ScreenEase.CoreService\ScreenEase.CoreService.exe'') --pipe-only'
+          ) | Set-Content -LiteralPath (Join-Path $packageRoot 'Start-Service.ps1') -Encoding utf8
+
+          @(
+              '$ErrorActionPreference = ''Stop'''
+              '$root = Split-Path -Parent $MyInvocation.MyCommand.Path'
+              '$env:ScreenEase__Endpoint = ''pipe:screenease.core'''
+              '& (Join-Path $root ''ScreenEase.Desktop\ScreenEase.Desktop.exe'')'
+          ) | Set-Content -LiteralPath (Join-Path $packageRoot 'Start-Desktop.ps1') -Encoding utf8
+
+          @(
+              'ScreenEase Windows Package'
+              ''
+              'Run Start-Desktop.ps1 or ScreenEase.Desktop\ScreenEase.Desktop.exe.'
+              ''
+              'The desktop client starts the core service automatically through pipe:screenease.core.'
+              'Start-Service.ps1 is only kept for troubleshooting.'
+          ) | Set-Content -LiteralPath (Join-Path $packageRoot 'RUNNING.txt') -Encoding utf8
+
+      - name: Create zip
+        shell: pwsh
+        run: |
+          $zipPath = Join-Path $PWD "artifacts\$env:ZIP_NAME"
+          Compress-Archive -Path '.\artifacts\package\ScreenEase' -DestinationPath $zipPath -Force
+          "ZIP_PATH=$zipPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenEase-win-x64
+          path: artifacts/*.zip
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notesPath = Join-Path $PWD 'artifacts\release-notes.md'
+          @(
+              "ScreenEase $env:RELEASE_TAG"
+              ''
+              'Windows package:'
+              ''
+              '- ScreenEase.Desktop'
+              '- ScreenEase.CoreService'
+              '- ScreenEase.NativeHost'
+              ''
+              'Run Start-Desktop.ps1 or ScreenEase.Desktop\ScreenEase.Desktop.exe. The desktop client starts the core service automatically.'
+          ) | Set-Content -LiteralPath $notesPath -Encoding utf8
+
+          $asset = $env:ZIP_PATH
+          gh release view $env:RELEASE_TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+              gh release upload $env:RELEASE_TAG $asset --clobber
+              gh release edit $env:RELEASE_TAG --title "ScreenEase $env:RELEASE_TAG" --notes-file $notesPath
+          } else {
+              gh release create $env:RELEASE_TAG $asset --title "ScreenEase $env:RELEASE_TAG" --notes-file $notesPath --target $env:GITHUB_SHA
+          }

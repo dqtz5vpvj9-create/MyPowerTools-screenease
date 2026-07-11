@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+.idea/
+.local/
+*.user
+*.suo
+TestResults/
+artifacts/
+*.zip

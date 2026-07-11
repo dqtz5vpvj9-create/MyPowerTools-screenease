@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "toolId": "screenease",
+  "sourceClassification": "original-product-repository",
+  "sourceNote": "ScreenEase is already an independent Git repository; unrelated untracked benchmark documents are excluded.",
+  "capturedAtUtc": "2026-07-11T16:41:55.8632158+00:00",
+  "originalSource": {
+    "sourceRoot": "C:\\Users\\lixinrui\\Documents\\Codex\\2026-07-01\\careueyes-ida-pro-core-service\\outputs\\ScreenEase",
+    "gitTopLevel": "C:/Users/lixinrui/Documents/Codex/2026-07-01/careueyes-ida-pro-core-service/outputs/ScreenEase",
+    "commit": "ec999534983cd832a51bd2d7ad5ccc865e3fd08b",
+    "branch": "main",
+    "dirty": true,
+    "status": [
+      "?? CompSwapBench-readable.md",
+      "?? CompressSwapBenchSurvey-readable.md"
+    ]
+  },
+  "originalSnapshotPath": "original-source",
+  "selectedEntries": [
+    "."
+  ],
+  "copiedFileCount": 50,
+  "missingEntries": [],
+  "currentIntegrationSnapshot": "current-integration",
+  "currentIntegrationGlobs": [
+    "modules/screenease/**",
+    "src/ScreenEase.MyPowerTools/**",
+    "src/MyPowerTools.Shell.Avalonia/**/*ScreenEase*",
+    "src/MyPowerTools.Tests/ScreenEase*"
+  ],
+  "currentIntegrationMatchedFileCount": 38,
+  "currentIntegrationCopiedFileCount": 38,
+  "currentIntegrationUnmatchedGlobs": [],
+  "currentIntegrationMissingFiles": []
+}

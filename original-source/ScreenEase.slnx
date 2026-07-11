@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ScreenEase.Core/ScreenEase.Core.csproj" />
+    <Project Path="src/ScreenEase.CoreService/ScreenEase.CoreService.csproj" />
+    <Project Path="src/ScreenEase.Desktop/ScreenEase.Desktop.csproj" />
+    <Project Path="src/ScreenEase.NativeHost/ScreenEase.NativeHost.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ScreenEase.Tests/ScreenEase.Tests.csproj" />
+  </Folder>
+</Solution>
+
+

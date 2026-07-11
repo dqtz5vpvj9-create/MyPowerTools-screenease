@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore .\ScreenEase.sln
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build .\ScreenEase.sln --configuration Release --no-restore
+
+      - name: Test
+        shell: pwsh
+        run: dotnet run --project .\tests\ScreenEase.Tests\ScreenEase.Tests.csproj --configuration Release --no-build

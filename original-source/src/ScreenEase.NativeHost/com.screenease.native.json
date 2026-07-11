@@ -1,0 +1,14 @@
+{
+  "name": "com.screenease.native",
+  "description": "ScreenEase native messaging host",
+  "path": "ScreenEase.NativeHost.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://poeonbclpmnoomoaidabfndafbnhjcfa/",
+    "chrome-extension://dkadfpmghpplllbldajfhglcihbghbgc/",
+    "chrome-extension://pacnollcefnfheghikkhbhodhnplhbdm/",
+    "chrome-extension://olmpfahephldkkfhkmlnociobiihgndg/"
+  ]
+}
+
+
