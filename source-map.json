@@ -3,7 +3,7 @@
   "toolId": "screenease",
   "sourceClassification": "original-product-repository",
   "sourceNote": "ScreenEase is already an independent Git repository; unrelated untracked benchmark documents are excluded.",
-  "capturedAtUtc": "2026-07-11T16:41:55.8632158+00:00",
+  "capturedAtUtc": "2026-07-11T16:45:10.9672473+00:00",
   "originalSource": {
     "sourceRoot": "C:\\Users\\lixinrui\\Documents\\Codex\\2026-07-01\\careueyes-ida-pro-core-service\\outputs\\ScreenEase",
     "gitTopLevel": "C:/Users/lixinrui/Documents/Codex/2026-07-01/careueyes-ida-pro-core-service/outputs/ScreenEase",
@@ -28,8 +28,8 @@
     "src/MyPowerTools.Shell.Avalonia/**/*ScreenEase*",
     "src/MyPowerTools.Tests/ScreenEase*"
   ],
-  "currentIntegrationMatchedFileCount": 38,
-  "currentIntegrationCopiedFileCount": 38,
+  "currentIntegrationMatchedFileCount": 28,
+  "currentIntegrationCopiedFileCount": 28,
   "currentIntegrationUnmatchedGlobs": [],
   "currentIntegrationMissingFiles": []
 }
