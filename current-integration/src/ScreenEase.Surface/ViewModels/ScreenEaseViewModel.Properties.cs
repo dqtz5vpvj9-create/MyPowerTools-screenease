@@ -1,7 +1,7 @@
 using System.Globalization;
-using MyPowerTools.Shell.Avalonia.Services;
+using ScreenEase.Surface.Services;
 
-namespace MyPowerTools.Shell.Avalonia.ViewModels;
+namespace ScreenEase.Surface.ViewModels;
 
 public sealed partial class ScreenEaseViewModel
 {

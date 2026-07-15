@@ -1,0 +1,27 @@
+{
+  "id": "screenease.service",
+  "toolId": "screenease",
+  "displayName": "ScreenEase Service",
+  "exec": "ScreenEase.Service.exe",
+  "arguments": [
+    "--pipe",
+    "screenease.core",
+    "--heartbeat-file",
+    "%LOCALAPPDATA%/MyPowerTools/state/screenease.heartbeat"
+  ],
+  "workingDirectory": "",
+  "environment": {
+    "ScreenEase__Transport": "pipe",
+    "ScreenEase__NamedPipe__Name": "screenease.core",
+    "ScreenEase__Driver": "windows"
+  },
+  "autostart": true,
+  "restartPolicy": { "maxRestarts": 5, "backoffMs": 2000 },
+  "readiness": { "kind": "pipe", "address": "screenease.core", "timeoutMs": 8000 },
+  "stopTimeoutMs": 5000,
+  "dataRoots": [
+    "%LOCALAPPDATA%/ScreenEase"
+  ],
+  "dependsOn": [],
+  "instanceToken": "screenease-service-v1"
+}

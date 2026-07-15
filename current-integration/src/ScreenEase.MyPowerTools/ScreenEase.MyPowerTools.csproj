@@ -1,12 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk" InitialTargets="ValidateMyPowerToolsRepoRoot">
+<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup Condition="'$(MyPowerToolsRepoRoot)' != ''">
-    <ProjectReference Include="$(MyPowerToolsRepoRoot)\src\MyPowerTools.Abstractions\MyPowerTools.Abstractions.csproj"
-                      Condition="Exists('$(MyPowerToolsRepoRoot)\src\MyPowerTools.Abstractions\MyPowerTools.Abstractions.csproj')" />
-    <ProjectReference Include="$(MyPowerToolsRepoRoot)\src\MyPowerTools.Protocol\MyPowerTools.Protocol.csproj"
-                      Condition="Exists('$(MyPowerToolsRepoRoot)\src\MyPowerTools.Protocol\MyPowerTools.Protocol.csproj')" />
-    <ProjectReference Include="$(MyPowerToolsRepoRoot)\src\MyPowerTools.Platform.Abstractions\MyPowerTools.Platform.Abstractions.csproj"
-                      Condition="Exists('$(MyPowerToolsRepoRoot)\src\MyPowerTools.Platform.Abstractions\MyPowerTools.Platform.Abstractions.csproj')" />
+  <ItemGroup>
+    <PackageReference Include="MyPowerTools.ToolSdk" Version="0.2.0" />
+    <PackageReference Include="MyPowerTools.Protocol" Version="0.2.0" />
+    <PackageReference Include="MyPowerTools.Platform.Abstractions" Version="0.2.0" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -16,21 +13,12 @@
     <ModulePackageRoot Condition="'$(ModulePackageRoot)' == ''">$(MSBuildProjectDirectory)\..\..\..\artifacts\package\screenease</ModulePackageRoot>
   </PropertyGroup>
 
-  <Target Name="ValidateMyPowerToolsRepoRoot">
-    <Error Condition="'$(MyPowerToolsRepoRoot)' == ''"
-           Text="MyPowerToolsRepoRoot is required. Run build.ps1 or pass -p:MyPowerToolsRepoRoot=&lt;absolute MyPowerTools repository path&gt;." />
-    <Error Condition="'$(MyPowerToolsRepoRoot)' != '' and !Exists('$(MyPowerToolsRepoRoot)\src\MyPowerTools.Abstractions\MyPowerTools.Abstractions.csproj')"
-           Text="MyPowerToolsRepoRoot does not contain src\MyPowerTools.Abstractions\MyPowerTools.Abstractions.csproj: $(MyPowerToolsRepoRoot)" />
-    <Error Condition="'$(MyPowerToolsRepoRoot)' != '' and !Exists('$(MyPowerToolsRepoRoot)\src\MyPowerTools.Protocol\MyPowerTools.Protocol.csproj')"
-           Text="MyPowerToolsRepoRoot does not contain src\MyPowerTools.Protocol\MyPowerTools.Protocol.csproj: $(MyPowerToolsRepoRoot)" />
-    <Error Condition="'$(MyPowerToolsRepoRoot)' != '' and !Exists('$(MyPowerToolsRepoRoot)\src\MyPowerTools.Platform.Abstractions\MyPowerTools.Platform.Abstractions.csproj')"
-           Text="MyPowerToolsRepoRoot does not contain src\MyPowerTools.Platform.Abstractions\MyPowerTools.Platform.Abstractions.csproj: $(MyPowerToolsRepoRoot)" />
-  </Target>
-
   <Target Name="CopyModuleAssemblyToPackage" AfterTargets="Build">
     <ItemGroup>
-      <ModuleDependencyFiles Include="$(TargetDir)MyPowerTools.Platform.Abstractions.dll" />
-      <ModuleDependencyFiles Include="$(TargetDir)MyPowerTools.Platform.Abstractions.pdb" />
+      <ModuleDependencyFiles Include="$(TargetDir)MyPowerTools.Platform.Abstractions.dll"
+                             Condition="Exists('$(TargetDir)MyPowerTools.Platform.Abstractions.dll')" />
+      <ModuleDependencyFiles Include="$(TargetDir)MyPowerTools.Platform.Abstractions.pdb"
+                             Condition="Exists('$(TargetDir)MyPowerTools.Platform.Abstractions.pdb')" />
     </ItemGroup>
     <MakeDir Directories="$(ModulePackageRoot)" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModulePackageRoot)" />

@@ -3,45 +3,20 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using MyPowerTools.Abstractions;
 using MyPowerTools.HostControl;
-using MyPowerTools.ServiceManager.Client;
 using HostProto = MyPowerTools.Protocol.HostControl.V1;
 
-namespace MyPowerTools.Shell.Avalonia.Services;
+namespace ScreenEase.Surface.Services;
 
 public sealed class ScreenEaseToolService
 {
     private const string ModuleId = "screenease";
     private const string ServiceUnitId = "screenease.service";
     private readonly ShellCommandExecutionService _commands = new();
+    private readonly IServiceUnitClient _serviceUnitClient;
 
-    /// <summary>
-    /// Scoped service-unit client for the ScreenEase.Service unit, if a ServiceManager is reachable.
-    /// Falls back to <see cref="NullServiceUnitClient"/> when no ServiceManager is running, so the
-    /// in-proc eye-care flow keeps working without the supervised unit. Lazily resolved so a missing
-    /// ServiceManager never breaks the existing tool page load.
-    /// </summary>
-    private IServiceUnitClient? _serviceUnitClient;
-    private bool _serviceUnitClientResolved;
-
-    private IServiceUnitClient ResolveServiceUnitClient()
+    public ScreenEaseToolService(IServiceUnitClient? serviceUnitClient = null)
     {
-        if (_serviceUnitClientResolved)
-        {
-            return _serviceUnitClient!;
-        }
-
-        _serviceUnitClientResolved = true;
-        try
-        {
-            var admin = ServiceManagerAdminClient.ForDefaultEndpoint();
-            _serviceUnitClient = new ScopedServiceUnitClient(admin, ModuleId);
-        }
-        catch
-        {
-            _serviceUnitClient = new NullServiceUnitClient(ModuleId);
-        }
-
-        return _serviceUnitClient;
+        _serviceUnitClient = serviceUnitClient ?? new NullServiceUnitClient(ModuleId);
     }
 
     /// <summary>
@@ -51,7 +26,7 @@ public sealed class ScreenEaseToolService
     /// </summary>
     public async Task<ScreenEaseServiceUnitStatus?> LoadServiceUnitStatusAsync(CancellationToken cancellationToken = default)
     {
-        var client = ResolveServiceUnitClient();
+        var client = _serviceUnitClient;
         if (client is NullServiceUnitClient)
         {
             return null;
@@ -82,7 +57,7 @@ public sealed class ScreenEaseToolService
     /// </summary>
     public async Task<ScreenEaseServiceUnitStatus?> RestartServiceUnitAsync(CancellationToken cancellationToken = default)
     {
-        var client = ResolveServiceUnitClient();
+        var client = _serviceUnitClient;
         if (client is NullServiceUnitClient)
         {
             return null;
@@ -738,6 +713,7 @@ public sealed class ScreenEaseToolService
             : null;
     }
 }
+
 public sealed record ScreenEaseSnapshot(
     string ActiveProfileId,
     IReadOnlyList<ScreenEaseProfile> Profiles,

@@ -6,9 +6,10 @@
   "description": "Adjust eye-care profiles and run rest reminders in one workspace.",
   "icon": "tool.screenease",
   "category": "Display",
+  "type": "dotnet-surface",
   "primaryRouteId": "profiles",
   "routes": [
-    { "routeId": "profiles", "surfaceId": "screenease.profiles", "title": "Eye care", "icon": "route.profiles" }
+    { "routeId": "profiles", "surfaceId": "screenease.profiles", "title": "Eye care", "icon": "route.profiles", "surface": { "kind": "dotnet", "assembly": "surface/ScreenEase.Surface.dll", "type": "ScreenEase.Surface.ScreenEaseSurfaceFactory" } }
   ],
   "homeCard": {
     "summary": "Tune color temperature and brightness, save modes, and run rest reminders.",

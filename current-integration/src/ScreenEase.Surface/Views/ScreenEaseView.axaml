@@ -1,0 +1,834 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:primitives="using:Avalonia.Controls.Primitives"
+             xmlns:controls="using:MyPowerTools.UI.Controls"
+             xmlns:services="using:ScreenEase.Surface.Services"
+             xmlns:vm="using:ScreenEase.Surface.ViewModels"
+             x:Class="ScreenEase.Surface.Views.ScreenEaseView"
+             x:DataType="vm:ScreenEaseViewModel"
+             FontSize="{DynamicResource MptFontSizeBody}"
+             MinHeight="620">
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource MptBrushTextPrimary}" />
+    </Style>
+    <Style Selector="Border.ScreenEaseCard">
+      <Setter Property="Padding" Value="{DynamicResource MptUniform2Xl}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource MptRadiusCard}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource MptBrushCardBackground}" />
+    </Style>
+    <Style Selector="Button.ScreenEaseModeButton">
+      <Setter Property="MinHeight" Value="64" />
+      <Setter Property="Padding" Value="{DynamicResource MptListItemPadding}" />
+      <Setter Property="Margin" Value="{DynamicResource MptGapBottomXs}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Background" Value="{DynamicResource MptBrushTransparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushTransparent}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource MptRadiusCard}" />
+    </Style>
+    <Style Selector="Button.ScreenEaseModeButton:pointerover">
+      <Setter Property="Background" Value="{DynamicResource MptBrushNavigationHover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushBorder}" />
+    </Style>
+    <Style Selector="Button.ScreenEaseModeButton.selected">
+      <Setter Property="Background" Value="{DynamicResource MptBrushNavigationSelected}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushBorderStrong}" />
+    </Style>
+    <Style Selector="Button.ScreenEasePrimary">
+      <Setter Property="MinHeight" Value="42" />
+      <Setter Property="Padding" Value="{DynamicResource MptButtonPadding}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource MptRadiusControl}" />
+      <Setter Property="Background" Value="{DynamicResource MptBrushScreenEaseAccent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushScreenEaseAccent}" />
+      <Setter Property="Foreground" Value="{DynamicResource MptBrushAccentText}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.ScreenEasePrimary:pointerover">
+      <Setter Property="Background" Value="{DynamicResource MptBrushScreenEaseAccentHover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushScreenEaseAccentHover}" />
+      <Setter Property="Foreground" Value="{DynamicResource MptBrushAccentText}" />
+    </Style>
+    <Style Selector="Button.ScreenEasePrimary:disabled">
+      <Setter Property="Background" Value="{DynamicResource MptBrushSurfaceInset}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushBorder}" />
+      <Setter Property="Foreground" Value="{DynamicResource MptBrushTextMuted}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.ScreenEaseSecondary">
+      <Setter Property="MinHeight" Value="42" />
+      <Setter Property="Padding" Value="{DynamicResource MptButtonPadding}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource MptRadiusControl}" />
+      <Setter Property="Background" Value="{DynamicResource MptBrushCardBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushBorder}" />
+      <Setter Property="Foreground" Value="{DynamicResource MptBrushTextPrimary}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.ScreenEaseSecondary:disabled">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource MptBrushCardBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushBorder}" />
+      <Setter Property="Foreground" Value="{DynamicResource MptBrushTextPrimary}" />
+    </Style>
+    <Style Selector="Button.ScreenEaseHeroButton">
+      <Setter Property="MinHeight" Value="42" />
+      <Setter Property="MinWidth" Value="126" />
+      <Setter Property="Padding" Value="{DynamicResource MptButtonPadding}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource MptRadiusControl}" />
+      <Setter Property="Background" Value="{DynamicResource MptBrushCardBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushCardBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource MptBrushScreenEaseAccent}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.ScreenEaseHeroButton:disabled">
+      <Setter Property="Background" Value="{DynamicResource MptBrushCardBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushCardBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource MptBrushTextSecondary}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="TextBox.ScreenEaseInput">
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="{DynamicResource MptInputPadding}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource MptRadiusControl}" />
+      <Setter Property="Background" Value="{DynamicResource MptBrushControlFillDefault}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushControlStrokeDefault}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Slider.ScreenEaseSlider">
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Foreground" Value="{DynamicResource MptBrushScreenEaseAccent}" />
+      <Setter Property="Background" Value="{DynamicResource MptBrushSurfaceInset}" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Grid Height="24">
+            <ProgressBar Height="4"
+                         Minimum="{TemplateBinding Minimum}"
+                         Maximum="{TemplateBinding Maximum}"
+                         Value="{TemplateBinding Value}"
+                         Background="{DynamicResource MptBrushSurfaceInset}"
+                         Foreground="{DynamicResource MptBrushScreenEaseAccent}"
+                         IsHitTestVisible="False"
+                         VerticalAlignment="Center" />
+            <primitives:Track Name="PART_Track"
+                              Height="24"
+                              Minimum="{TemplateBinding Minimum}"
+                              Maximum="{TemplateBinding Maximum}"
+                              Value="{TemplateBinding Value, Mode=TwoWay}"
+                              Orientation="Horizontal"
+                              VerticalAlignment="Center">
+              <primitives:Track.DecreaseButton>
+                <RepeatButton Background="{DynamicResource MptBrushTransparent}"
+                              BorderBrush="{DynamicResource MptBrushTransparent}" />
+              </primitives:Track.DecreaseButton>
+              <primitives:Track.Thumb>
+                <Thumb Width="20" Height="20">
+                  <Thumb.Template>
+                    <ControlTemplate>
+                      <Border Width="20"
+                              Height="20"
+                              CornerRadius="{DynamicResource MptRadiusBadge}"
+                              Background="{DynamicResource MptBrushCardBackground}"
+                              BorderBrush="{DynamicResource MptBrushScreenEaseAccent}"
+                              BorderThickness="2" />
+                    </ControlTemplate>
+                  </Thumb.Template>
+                </Thumb>
+              </primitives:Track.Thumb>
+              <primitives:Track.IncreaseButton>
+                <RepeatButton Background="{DynamicResource MptBrushTransparent}"
+                              BorderBrush="{DynamicResource MptBrushTransparent}" />
+              </primitives:Track.IncreaseButton>
+            </primitives:Track>
+          </Grid>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.ScreenEaseDiagnostics">
+      <Setter Property="Background" Value="{DynamicResource MptBrushTransparent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MptBrushTransparent}" />
+      <Setter Property="Padding" Value="{DynamicResource MptNoThickness}" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Ellipse.ScreenEaseConnectionDot.connected">
+      <Setter Property="Fill" Value="{DynamicResource MptBrushScreenEaseAccent}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="58,*"
+        Background="{DynamicResource MptBrushAppBackground}">
+    <Border Background="{DynamicResource MptBrushCardBackground}"
+            BorderBrush="{DynamicResource MptBrushBorder}"
+            BorderThickness="0,0,0,1"
+            Padding="{DynamicResource MptHorizontal2XlPadding}">
+      <Grid ColumnDefinitions="*,Auto"
+            MaxWidth="1680"
+            HorizontalAlignment="Stretch">
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource MptSpacingM}"
+                    VerticalAlignment="Center">
+          <TextBlock Text="ScreenEase"
+                     FontSize="{DynamicResource MptFontSizeSection}"
+                     LineHeight="32"
+                     FontWeight="SemiBold" />
+          <Ellipse Width="8"
+                   Height="8"
+                   Classes="ScreenEaseConnectionDot"
+                   Classes.connected="{Binding IsConnected}"
+                   Fill="{DynamicResource MptBrushNeutral}"
+                   VerticalAlignment="Center" />
+          <TextBlock Text="{Binding ConnectionText}"
+                     FontSize="{DynamicResource MptFontSizeBody}"
+                     Foreground="{DynamicResource MptBrushTextSecondary}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Grid.Column="1"
+                   Text="{Binding CurrentSummary}"
+                   FontSize="{DynamicResource MptFontSizeSection}"
+                   LineHeight="32"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+
+    <Grid x:Name="MainLayout" Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="280" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <Border x:Name="ModeSidebar"
+              Background="{DynamicResource MptBrushNavigationBackground}"
+              BorderBrush="{DynamicResource MptBrushBorder}"
+              BorderThickness="0,0,1,0">
+        <Grid RowDefinitions="Auto,*,Auto"
+               Margin="{DynamicResource MptUniformXl}">
+          <StackPanel Spacing="{DynamicResource MptSpacingXs}"
+                      Margin="{DynamicResource MptGapBottomM}">
+            <TextBlock Text="模式"
+                       FontSize="{DynamicResource MptFontSizeSection}"
+                       LineHeight="35"
+                       FontWeight="Bold" />
+            <TextBlock Text="{Binding EyeCareStatusText}"
+                       FontSize="{DynamicResource MptFontSizeMeta}"
+                       Foreground="{DynamicResource MptBrushTextSecondary}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+
+          <ScrollViewer Grid.Row="1"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Modes}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ScreenEaseModeViewModel">
+                  <controls:MptButton Classes="ScreenEaseModeButton"
+                                      Classes.selected="{Binding IsSelected}"
+                                      AutomationProperties.Name="{Binding Name}"
+                                      Command="{Binding SelectCommand}">
+                    <Grid ColumnDefinitions="5,*"
+                          ColumnSpacing="11">
+                      <Border Width="4"
+                              CornerRadius="{DynamicResource MptRadiusXs}"
+                               Background="{DynamicResource MptBrushScreenEaseAccent}"
+                              IsVisible="{Binding IsSelected}" />
+                      <StackPanel Grid.Column="1"
+                                  Spacing="{DynamicResource MptSpacingXs}"
+                                  VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="{DynamicResource MptFontSizeCardTitle}"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding ValuesText}"
+                                   FontSize="{DynamicResource MptFontSizeBody}"
+                                   Foreground="{DynamicResource MptBrushTextSecondary}" />
+                      </StackPanel>
+                    </Grid>
+                  </controls:MptButton>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <controls:MptButton Grid.Row="2"
+                              Classes="ScreenEasePrimary"
+                              Content="{Binding EyeCareActionLabel}"
+                              Command="{Binding ToggleEyeCareCommand}"
+                              HorizontalAlignment="Stretch"
+                              Margin="{DynamicResource MptGapTopM}" />
+        </Grid>
+      </Border>
+
+      <StackPanel x:Name="ContentPanel"
+                  Grid.Column="1"
+                   Margin="{DynamicResource MptPagePadding}"
+                  MaxWidth="1500"
+                  HorizontalAlignment="Stretch"
+                   Spacing="{DynamicResource MptSpacingL}">
+        <Border MinHeight="76"
+                Padding="{DynamicResource MptSettingsRowPadding}"
+                CornerRadius="{DynamicResource MptRadiusLarge}"
+                Background="{DynamicResource MptBrushScreenEaseAccent}">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="{DynamicResource MptSpacingXs}"
+                        VerticalAlignment="Center">
+              <TextBlock Text="{Binding ModeName}"
+                         FontSize="{DynamicResource MptFontSizeSection}"
+                         LineHeight="32"
+                         FontWeight="Bold"
+                         Foreground="{DynamicResource MptBrushAccentText}" />
+              <TextBlock Text="{Binding EyeCareStatusText}"
+                         FontSize="{DynamicResource MptFontSizeBody}"
+                         Foreground="{DynamicResource MptBrushScreenEaseAccentTextMuted}" />
+            </StackPanel>
+            <controls:MptButton Grid.Column="1"
+                                Classes="ScreenEaseHeroButton"
+                                Content="{Binding EyeCareActionLabel}"
+                                Command="{Binding ToggleEyeCareCommand}"
+                                VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+
+        <Grid x:Name="WorkspaceGrid"
+              ColumnDefinitions="*,*"
+              RowDefinitions="Auto"
+              ColumnSpacing="14"
+              RowSpacing="14">
+          <Border x:Name="EyeCareCard"
+                  Classes="ScreenEaseCard"
+                  MinHeight="575"
+                  VerticalAlignment="Top">
+            <StackPanel Spacing="{DynamicResource MptSpacingL}">
+              <TextBlock Text="护眼调节"
+                         FontSize="{DynamicResource MptFontSizeSection}"
+                         LineHeight="34"
+                         FontWeight="Bold" />
+
+              <Grid RowDefinitions="Auto,Auto"
+                    ColumnDefinitions="70,*,76"
+                    RowSpacing="10"
+                    ColumnSpacing="10">
+                <TextBlock Text="色温"
+                           VerticalAlignment="Center" />
+                <Slider Grid.Column="1"
+                        Classes="ScreenEaseSlider"
+                        AutomationProperties.Name="色温"
+                        Minimum="2500"
+                        Maximum="6500"
+                        SmallChange="100"
+                        LargeChange="500"
+                        Value="{Binding ColorTemperature, Mode=TwoWay}" />
+                <TextBlock Grid.Column="2"
+                           Text="{Binding ColorTemperatureText}"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center" />
+
+                <TextBlock Grid.Row="1"
+                           Text="亮度"
+                           VerticalAlignment="Center" />
+                <Slider Grid.Row="1"
+                        Grid.Column="1"
+                        Classes="ScreenEaseSlider"
+                        AutomationProperties.Name="亮度"
+                        Minimum="10"
+                        Maximum="100"
+                        SmallChange="1"
+                        LargeChange="10"
+                        Value="{Binding Brightness, Mode=TwoWay}" />
+                <TextBlock Grid.Row="1"
+                           Grid.Column="2"
+                           Text="{Binding BrightnessText}"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center" />
+              </Grid>
+
+              <Expander Header="日夜自动切换"
+                        IsExpanded="False">
+                <Border Padding="{DynamicResource MptCompactPadding}"
+                        Margin="{DynamicResource MptGapTopS}"
+                        CornerRadius="{DynamicResource MptRadiusCard}"
+                        Background="{DynamicResource MptBrushSurfaceInset}">
+                  <StackPanel Spacing="{DynamicResource MptSpacingS}">
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="{DynamicResource MptSpacingL}">
+                    <controls:MptCheckBox Content="启用夜间值"
+                                          IsChecked="{Binding UseNightValues, Mode=TwoWay}" />
+                    <controls:MptCheckBox Content="编辑夜间值"
+                                          IsChecked="{Binding EditingNightValues, Mode=TwoWay}"
+                                          IsEnabled="{Binding UseNightValues}" />
+                    <controls:MptCheckBox Content="按时间自动切换"
+                                          IsChecked="{Binding UseSchedule, Mode=TwoWay}" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
+                    <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                      <TextBlock Text="日出"
+                                 FontSize="{DynamicResource MptFontSizeMeta}"
+                                 Foreground="{DynamicResource MptBrushTextSecondary}" />
+                      <controls:MptTextBox Classes="ScreenEaseInput"
+                                           AutomationProperties.Name="日出时间"
+                                           PlaceholderText="07:00"
+                                           Text="{Binding Sunrise, Mode=TwoWay}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="{DynamicResource MptSpacingXs}">
+                      <TextBlock Text="日落"
+                                 FontSize="{DynamicResource MptFontSizeMeta}"
+                                 Foreground="{DynamicResource MptBrushTextSecondary}" />
+                      <controls:MptTextBox Classes="ScreenEaseInput"
+                                           AutomationProperties.Name="日落时间"
+                                           PlaceholderText="19:00"
+                                           Text="{Binding Sunset, Mode=TwoWay}" />
+                    </StackPanel>
+                    <controls:MptButton Grid.Column="2"
+                                        Classes="ScreenEaseSecondary"
+                                        Content="保存时间表"
+                                        Command="{Binding SaveScheduleCommand}"
+                                        VerticalAlignment="Bottom" />
+                  </Grid>
+                  <TextBlock Text="{Binding ScheduleStatusText}"
+                              FontSize="{DynamicResource MptFontSizeMeta}"
+                             Foreground="{DynamicResource MptBrushTextSecondary}"
+                             TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </Expander>
+
+              <StackPanel Spacing="{DynamicResource MptSpacingS}">
+                <TextBlock Text="模式名称"
+                           FontSize="{DynamicResource MptFontSizeMeta}"
+                           Foreground="{DynamicResource MptBrushTextSecondary}" />
+                <Grid ColumnDefinitions="*,Auto,Auto"
+                      ColumnSpacing="8">
+                  <controls:MptTextBox Classes="ScreenEaseInput"
+                                       AutomationProperties.Name="模式名称"
+                                       Text="{Binding ModeName, Mode=TwoWay}" />
+                  <controls:MptButton Grid.Column="1"
+                                      Classes="ScreenEaseSecondary"
+                                      Content="保存"
+                                      Command="{Binding SaveModeCommand}" />
+                  <controls:MptButton Grid.Column="2"
+                                      Classes="ScreenEaseSecondary"
+                                      Content="新增"
+                                      Command="{Binding NewModeCommand}" />
+                </Grid>
+              </StackPanel>
+
+              <controls:MptButton Classes="ScreenEasePrimary"
+                                  Content="{Binding ApplyCurrentLabel}"
+                                  Command="{Binding ApplyCurrentCommand}"
+                                  HorizontalAlignment="Left" />
+              <TextBlock Text="{Binding OperationMessage}"
+                         FontSize="{DynamicResource MptFontSizeMeta}"
+                         Foreground="{DynamicResource MptBrushTextSecondary}"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding HasOperationMessage}" />
+            </StackPanel>
+          </Border>
+
+          <Border x:Name="ReminderCard"
+                  Grid.Column="1"
+                  Classes="ScreenEaseCard"
+                  MinHeight="575"
+                  VerticalAlignment="Top">
+            <StackPanel Spacing="{DynamicResource MptSpacingL}">
+              <TextBlock Text="休息提醒"
+                         FontSize="{DynamicResource MptFontSizeSection}"
+                         LineHeight="34"
+                         FontWeight="Bold" />
+
+              <Grid ColumnDefinitions="*,*,*"
+                    ColumnSpacing="12">
+                <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                  <TextBlock Text="状态"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource MptBrushTextSecondary}" />
+                  <TextBlock Text="{Binding ReminderStatusText}"
+                             FontSize="{DynamicResource MptFontSizeSection}"
+                             LineHeight="28"
+                             FontWeight="Bold" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="{DynamicResource MptSpacingXs}">
+                  <TextBlock Text="剩余"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource MptBrushTextSecondary}" />
+                  <TextBlock Text="{Binding RemainingText}"
+                             FontSize="{DynamicResource MptFontSizeSection}"
+                             LineHeight="28"
+                             FontWeight="Bold" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="{DynamicResource MptSpacingXs}">
+                  <TextBlock Text="次数"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource MptBrushTextSecondary}" />
+                  <TextBlock Text="{Binding RoundCountText}"
+                             FontSize="{DynamicResource MptFontSizeSection}"
+                             LineHeight="28"
+                             FontWeight="Bold" />
+                </StackPanel>
+              </Grid>
+
+              <WrapPanel Orientation="Horizontal">
+                <controls:MptButton Classes="ScreenEaseSecondary"
+                                    Content="开始"
+                                    Command="{Binding StartReminderCommand}"
+                                    Margin="{DynamicResource MptWrapItemCompactMargin}" />
+                <controls:MptButton Classes="ScreenEaseSecondary"
+                                    Content="暂停"
+                                    Command="{Binding PauseReminderCommand}"
+                                    Margin="{DynamicResource MptWrapItemCompactMargin}" />
+                <controls:MptButton Classes="ScreenEaseSecondary"
+                                    Content="继续"
+                                    Command="{Binding ResumeReminderCommand}"
+                                    Margin="{DynamicResource MptWrapItemCompactMargin}" />
+                <controls:MptButton Classes="ScreenEaseSecondary"
+                                    Content="重置"
+                                    Command="{Binding ResetReminderCommand}"
+                                    Margin="{DynamicResource MptGapBottomS}" />
+              </WrapPanel>
+
+              <Border Height="1"
+                      Background="{DynamicResource MptBrushDivider}" />
+
+              <Grid ColumnDefinitions="*,*"
+                    ColumnSpacing="14">
+                <controls:MptCheckBox Content="启用提醒"
+                                      IsChecked="{Binding ReminderEnabled, Mode=TwoWay}" />
+                <controls:MptCheckBox Grid.Column="1"
+                                      Content="自动开始下一轮"
+                                      IsChecked="{Binding AutoStartNext, Mode=TwoWay}" />
+              </Grid>
+
+              <Grid RowDefinitions="Auto,Auto"
+                    ColumnDefinitions="*,*"
+                    RowSpacing="9"
+                    ColumnSpacing="12">
+                <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                  <TextBlock Text="专注分钟"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource MptBrushTextSecondary}" />
+                  <controls:MptTextBox Classes="ScreenEaseInput"
+                                       AutomationProperties.Name="专注分钟"
+                                       Text="{Binding FocusMinutes, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="{DynamicResource MptSpacingXs}">
+                  <TextBlock Text="短休分钟"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource MptBrushTextSecondary}" />
+                  <controls:MptTextBox Classes="ScreenEaseInput"
+                                       AutomationProperties.Name="短休分钟"
+                                       Text="{Binding ShortBreakMinutes, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Spacing="{DynamicResource MptSpacingXs}">
+                  <TextBlock Text="长休分钟"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource MptBrushTextSecondary}" />
+                  <controls:MptTextBox Classes="ScreenEaseInput"
+                                       AutomationProperties.Name="长休分钟"
+                                       Text="{Binding LongBreakMinutes, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="{DynamicResource MptSpacingXs}">
+                  <TextBlock Text="长休间隔"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource MptBrushTextSecondary}" />
+                  <controls:MptTextBox Classes="ScreenEaseInput"
+                                       AutomationProperties.Name="长休间隔"
+                                       Text="{Binding LongBreakInterval, Mode=TwoWay}" />
+                </StackPanel>
+              </Grid>
+
+              <controls:MptButton Classes="ScreenEaseSecondary"
+                                  Content="保存提醒设置"
+                                  Command="{Binding SaveReminderCommand}"
+                                  HorizontalAlignment="Left" />
+              <TextBlock Text="{Binding ReminderMessage}"
+                         FontSize="{DynamicResource MptFontSizeMeta}"
+                         Foreground="{DynamicResource MptBrushTextSecondary}"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding HasReminderMessage}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <Expander Header="高级护眼设置"
+                  IsExpanded="False">
+          <Border Classes="ScreenEaseCard"
+                  Margin="{DynamicResource MptGapTopS}">
+            <Grid ColumnDefinitions="*,*"
+                  RowDefinitions="Auto,Auto"
+                  ColumnSpacing="{DynamicResource MptSpacingL}"
+                  RowSpacing="{DynamicResource MptSpacingL}">
+              <Border Classes="MptInset">
+                <StackPanel Spacing="{DynamicResource MptSpacingM}">
+                  <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                    <TextBlock Text="平滑过渡"
+                               FontSize="{DynamicResource MptFontSizeCardTitle}"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="保留原 ScreenEase 的过渡参数；显示驱动按原实现立即应用。"
+                               Foreground="{DynamicResource MptBrushTextSecondary}"
+                               TextWrapping="Wrap" />
+                  </StackPanel>
+                  <controls:MptCheckBox Content="启用平滑过渡"
+                                        IsChecked="{Binding SmoothTransitions, Mode=TwoWay}" />
+                  <Grid ColumnDefinitions="*,Auto"
+                        ColumnSpacing="{DynamicResource MptSpacingS}">
+                    <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                      <TextBlock Text="过渡时长（毫秒）"
+                                 FontSize="{DynamicResource MptFontSizeMeta}"
+                                 Foreground="{DynamicResource MptBrushTextSecondary}" />
+                      <controls:MptTextBox Classes="ScreenEaseInput"
+                                           AutomationProperties.Name="平滑过渡时长"
+                                           Text="{Binding TransitionDurationMs, Mode=TwoWay}" />
+                    </StackPanel>
+                    <controls:MptButton Grid.Column="1"
+                                        Classes="ScreenEaseSecondary"
+                                        Content="保存过渡设置"
+                                        Command="{Binding SaveAdvancedCommand}"
+                                        VerticalAlignment="Bottom" />
+                  </Grid>
+                  <TextBlock Text="{Binding AdvancedMessage}"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             Foreground="{DynamicResource MptBrushTextSecondary}"
+                             TextWrapping="Wrap"
+                             IsVisible="{Binding HasAdvancedMessage}" />
+                </StackPanel>
+              </Border>
+
+              <Border Grid.Column="1"
+                      Classes="MptInset">
+                <StackPanel Spacing="{DynamicResource MptSpacingM}">
+                  <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                    <TextBlock Text="柔光遮罩"
+                               FontSize="{DynamicResource MptFontSizeCardTitle}"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="在每台显示器上创建鼠标穿透的顶层暖色遮罩。"
+                               Foreground="{DynamicResource MptBrushTextSecondary}"
+                               TextWrapping="Wrap" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,*"
+                        ColumnSpacing="{DynamicResource MptSpacingM}">
+                    <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                      <TextBlock Text="运行状态"
+                                 FontSize="{DynamicResource MptFontSizeMeta}"
+                                 Foreground="{DynamicResource MptBrushTextSecondary}" />
+                      <TextBlock Text="{Binding OverlayStateText}"
+                                 FontWeight="SemiBold" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Spacing="{DynamicResource MptSpacingXs}">
+                      <TextBlock Text="窗口"
+                                 FontSize="{DynamicResource MptFontSizeMeta}"
+                                 Foreground="{DynamicResource MptBrushTextSecondary}" />
+                      <TextBlock Text="{Binding OverlayWindowCountText}"
+                                 FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Grid>
+                  <controls:MptCheckBox Content="启用柔光遮罩"
+                                        IsChecked="{Binding OverlayEnabled, Mode=TwoWay}" />
+                  <Grid ColumnDefinitions="*,*"
+                        ColumnSpacing="{DynamicResource MptSpacingS}">
+                    <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                      <TextBlock Text="不透明度（0–95）"
+                                 FontSize="{DynamicResource MptFontSizeMeta}"
+                                 Foreground="{DynamicResource MptBrushTextSecondary}" />
+                      <controls:MptTextBox Classes="ScreenEaseInput"
+                                           AutomationProperties.Name="遮罩不透明度"
+                                           Text="{Binding OverlayOpacityPercent, Mode=TwoWay}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Spacing="{DynamicResource MptSpacingXs}">
+                      <TextBlock Text="颜色（#RRGGBB）"
+                                 FontSize="{DynamicResource MptFontSizeMeta}"
+                                 Foreground="{DynamicResource MptBrushTextSecondary}" />
+                      <controls:MptTextBox Classes="ScreenEaseInput"
+                                           AutomationProperties.Name="遮罩颜色"
+                                           Text="{Binding OverlayColorHex, Mode=TwoWay}" />
+                    </StackPanel>
+                  </Grid>
+                  <controls:MptButton Classes="ScreenEaseSecondary"
+                                      Content="应用遮罩设置"
+                                      Command="{Binding SaveOverlayCommand}"
+                                      HorizontalAlignment="Left" />
+                  <TextBlock Text="{Binding OverlayRuntimeDetail}"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             Foreground="{DynamicResource MptBrushTextSecondary}"
+                             TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding OverlayMessage}"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             Foreground="{DynamicResource MptBrushTextSecondary}"
+                             TextWrapping="Wrap"
+                             IsVisible="{Binding HasOverlayMessage}" />
+                </StackPanel>
+              </Border>
+
+              <Border Grid.Row="1"
+                      Classes="MptInset">
+                <StackPanel Spacing="{DynamicResource MptSpacingM}">
+                  <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                    <TextBlock Text="导入 CareUEyes"
+                               FontSize="{DynamicResource MptFontSizeCardTitle}"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="导入 INI 中的模式、日夜计划、休息提醒和过渡设置。"
+                               Foreground="{DynamicResource MptBrushTextSecondary}"
+                               TextWrapping="Wrap" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,Auto"
+                        ColumnSpacing="{DynamicResource MptSpacingS}">
+                    <controls:MptTextBox Classes="ScreenEaseInput"
+                                         AutomationProperties.Name="CareUEyes INI 文件路径"
+                                         PlaceholderText="C:\path\to\CareUEyes.ini"
+                                         Text="{Binding LegacyIniPath, Mode=TwoWay}" />
+                    <controls:MptButton Grid.Column="1"
+                                        Classes="ScreenEaseSecondary"
+                                        Content="导入"
+                                        Command="{Binding ImportLegacyCommand}" />
+                  </Grid>
+                  <TextBlock Text="导入会替换 ScreenEase 当前模式和相关计划。"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             Foreground="{DynamicResource MptBrushTextMuted}"
+                             TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding LegacyImportMessage}"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             Foreground="{DynamicResource MptBrushTextSecondary}"
+                             TextWrapping="Wrap"
+                             IsVisible="{Binding HasLegacyImportMessage}" />
+                </StackPanel>
+              </Border>
+
+              <Border Grid.Row="1"
+                      Grid.Column="1"
+                      Classes="MptInset">
+                <StackPanel Spacing="{DynamicResource MptSpacingM}">
+                  <Grid ColumnDefinitions="*,Auto"
+                        ColumnSpacing="{DynamicResource MptSpacingM}">
+                    <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                      <TextBlock Text="快捷键"
+                                 FontSize="{DynamicResource MptFontSizeCardTitle}"
+                                 FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding HotkeyStatusText}"
+                                 Foreground="{DynamicResource MptBrushTextSecondary}" />
+                    </StackPanel>
+                    <controls:MptButton Grid.Column="1"
+                                        Classes="ScreenEaseSecondary"
+                                        Content="打开快捷键设置"
+                                        Command="{Binding OpenHotkeySettingsCommand}"
+                                        VerticalAlignment="Center" />
+                  </Grid>
+                  <TextBlock Text="{Binding HotkeyCountText}"
+                             FontSize="{DynamicResource MptFontSizeMeta}"
+                             Foreground="{DynamicResource MptBrushTextMuted}" />
+                  <ItemsControl ItemsSource="{Binding Hotkeys}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="services:ScreenEaseHotkey">
+                        <Grid ColumnDefinitions="*,Auto,Auto"
+                              ColumnSpacing="{DynamicResource MptSpacingS}"
+                              Margin="{DynamicResource MptGapBottomXs}">
+                          <TextBlock Text="{Binding Title}"
+                                     TextTrimming="CharacterEllipsis" />
+                          <TextBlock Grid.Column="1"
+                                     Classes="MptMono"
+                                     Text="{Binding Gesture}" />
+                          <TextBlock Grid.Column="2"
+                                     Classes="MptMeta"
+                                     Text="{Binding StatusText}" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </Grid>
+          </Border>
+        </Expander>
+
+        <controls:MptButton Classes="ScreenEaseDiagnostics"
+                            AutomationProperties.Name="{Binding DiagnosticsTitle}"
+                            Command="{Binding ToggleDiagnosticsCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource MptSpacingS}">
+            <Border Width="22"
+                    Height="22"
+                    CornerRadius="{DynamicResource MptRadiusBadge}"
+                    BorderBrush="{DynamicResource MptBrushTextMuted}"
+                    BorderThickness="1">
+              <Grid Width="14" Height="14"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <Path Data="M 2,4 L 7,9 L 12,4"
+                      Stroke="{DynamicResource MptBrushTextMuted}"
+                      StrokeThickness="1.5"
+                      IsVisible="{Binding !DiagnosticsExpanded}" />
+                <Path Data="M 2,10 L 7,5 L 12,10"
+                      Stroke="{DynamicResource MptBrushTextMuted}"
+                      StrokeThickness="1.5"
+                      IsVisible="{Binding DiagnosticsExpanded}" />
+              </Grid>
+            </Border>
+            <TextBlock Text="{Binding DiagnosticsTitle}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </controls:MptButton>
+
+        <Border Classes="ScreenEaseCard"
+                IsVisible="{Binding DiagnosticsExpanded}">
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+            <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+              <TextBlock Text="显示器硬件调节"
+                         FontWeight="SemiBold" />
+              <TextBlock Text="{Binding NativeWriterStatusLabel}"
+                         FontSize="{DynamicResource MptFontSizeCardTitle}"
+                         FontWeight="SemiBold" />
+              <TextBlock Text="{Binding NativeWriterStatusDetail}"
+                         Foreground="{DynamicResource MptBrushTextSecondary}"
+                         TextWrapping="Wrap" />
+              <TextBlock Text="{Binding NativeWriterTechnicalDetails}"
+                         Classes="MptMono"
+                         Foreground="{DynamicResource MptBrushTextMuted}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="{DynamicResource MptSpacingXs}">
+              <TextBlock Text="显示器"
+                         FontWeight="SemiBold" />
+              <TextBlock Text="{Binding DisplayCountText}"
+                         FontSize="{DynamicResource MptFontSizeCardTitle}"
+                         FontWeight="SemiBold" />
+              <TextBlock Text="显示器状态由 Runner 定期重新检测。"
+                         Foreground="{DynamicResource MptBrushTextSecondary}"
+                         TextWrapping="Wrap" />
+              <ItemsControl ItemsSource="{Binding DetectedDisplays}"
+                            Margin="{DynamicResource MptGapTopS}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ScreenEaseDetectedDisplayViewModel">
+                    <Border Classes="MptInset"
+                            Margin="{DynamicResource MptGapBottomS}">
+                      <StackPanel Spacing="{DynamicResource MptSpacingXs}">
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="{DynamicResource MptSpacingS}">
+                          <TextBlock Text="{Binding Name}"
+                                     FontWeight="SemiBold"
+                                     TextTrimming="CharacterEllipsis" />
+                          <TextBlock Grid.Column="1"
+                                     Classes="MptMeta"
+                                     Text="{Binding PrimaryText}" />
+                        </Grid>
+                        <TextBlock Classes="MptMono"
+                                   Text="{Binding Detail}"
+                                   TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Grid>
+        </Border>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

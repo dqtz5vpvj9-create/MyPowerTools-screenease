@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>ScreenEase.Service</AssemblyName>
+    <RootNamespace>ScreenEase.Service</RootNamespace>
+    <Description>
+      ScreenEase Service Unit process, supervised by MyPowerTools.ServiceManager.
+      Owns the long-running eye-care loop independently of the Shell and Runner:
+      Shell/Runner restarts never end this process. Provides a named-pipe readiness
+      probe (screenease.core) and a heartbeat so the ServiceManager can confirm liveness.
+    </Description>
+  </PropertyGroup>
+
+</Project>
