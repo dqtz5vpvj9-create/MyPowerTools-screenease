@@ -15,4 +15,8 @@
     </Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ScreenEase.MyPowerTools\ScreenEase.MyPowerTools.csproj" />
+  </ItemGroup>
+
 </Project>

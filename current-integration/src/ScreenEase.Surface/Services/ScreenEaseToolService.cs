@@ -2,8 +2,6 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using MyPowerTools.Abstractions;
-using MyPowerTools.HostControl;
-using HostProto = MyPowerTools.Protocol.HostControl.V1;
 
 namespace ScreenEase.Surface.Services;
 
@@ -11,12 +9,13 @@ public sealed class ScreenEaseToolService
 {
     private const string ModuleId = "screenease";
     private const string ServiceUnitId = "screenease.service";
-    private readonly ShellCommandExecutionService _commands = new();
+    private readonly ShellCommandExecutionService _commands;
     private readonly IServiceUnitClient _serviceUnitClient;
 
     public ScreenEaseToolService(IServiceUnitClient? serviceUnitClient = null)
     {
         _serviceUnitClient = serviceUnitClient ?? new NullServiceUnitClient(ModuleId);
+        _commands = new ShellCommandExecutionService(_serviceUnitClient);
     }
 
     /// <summary>
@@ -83,13 +82,11 @@ public sealed class ScreenEaseToolService
 
     public async Task<ScreenEaseSnapshot> LoadAsync(CancellationToken cancellationToken = default)
     {
-        using var client = HostControlClient.ForDefaultEndpoint();
         var statusTask = _commands.ExecuteAsync("screenease.status.summary", cancellationToken: cancellationToken);
         var planTask = _commands.ExecuteAsync("screenease.profile.plan", cancellationToken: cancellationToken);
-        var settingsTask = client.GetSettingsAsync(ModuleId, cancellationToken);
-        var logsTask = client.TailLogsAsync(ModuleId, cancellationToken);
-        var diagnosticsTask = client.GetRuntimeDiagnosticsAsync(cancellationToken);
-        await Task.WhenAll(statusTask, planTask, settingsTask, logsTask, diagnosticsTask).ConfigureAwait(false);
+        var settingsTask = _commands.GetSettingsAsync(cancellationToken);
+        var logsTask = _commands.TailLogsAsync(cancellationToken);
+        await Task.WhenAll(statusTask, planTask, settingsTask, logsTask).ConfigureAwait(false);
 
         EnsureSucceeded(statusTask.Result);
         var status = ParseObject(statusTask.Result.Response.Summary);
@@ -97,12 +94,12 @@ public sealed class ScreenEaseToolService
             ? ParsePlan(ParseObject(planTask.Result.Response.Summary))
             : ScreenEasePlan.Empty;
         var nativeHost = status["nativeHost"] as JsonObject;
-        var settings = JsonStructMapper.ToJsonObject(settingsTask.Result.Values);
+        var settings = settingsTask.Result.Values;
         var activity = logsTask.Result
-            .OrderByDescending(entry => entry.Time?.ToDateTimeOffset() ?? DateTimeOffset.MinValue)
+            .OrderByDescending(entry => entry.Time)
             .Take(40)
             .Select(entry => new ScreenEaseActivity(
-                entry.Time?.ToDateTimeOffset() ?? DateTimeOffset.MinValue,
+                entry.Time,
                 entry.Level,
                 entry.Message))
             .ToArray();
@@ -126,7 +123,7 @@ public sealed class ScreenEaseToolService
             ParseEffect(status["effect"] as JsonObject),
             ParseAdvanced(status["advanced"] as JsonObject ?? settings["advanced"] as JsonObject),
             ParseOverlayResult(status["overlay"] as JsonObject),
-            ParseHotkeys(settings["hotkeys"] as JsonArray, diagnosticsTask.Result.Hotkeys));
+            ParseHotkeys(settings["hotkeys"] as JsonArray));
     }
 
     public async Task<ScreenEasePlan> PreviewAsync(
@@ -140,6 +137,20 @@ public sealed class ScreenEaseToolService
             cancellationToken).ConfigureAwait(false);
         EnsureSucceeded(result);
         return ParsePlan(ParseObject(result.Response.Summary));
+    }
+
+    public async Task<ScreenEaseDisplayEffect> ApplyProfileAsync(
+        string profileId,
+        string displayId,
+        bool hardwareWrite,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _commands.ExecuteAsync(
+            "screenease.profile.apply",
+            BuildApplyArgs(profileId, displayId, hardwareWrite),
+            cancellationToken).ConfigureAwait(false);
+        EnsureSucceeded(result);
+        return ParseEffect(ParseObject(result.Response.Summary)["effect"] as JsonObject);
     }
 
     public async Task SaveProfileAsync(
@@ -197,17 +208,12 @@ public sealed class ScreenEaseToolService
         ScreenEaseAdvanced advanced,
         CancellationToken cancellationToken = default)
     {
-        using var client = HostControlClient.ForDefaultEndpoint();
         var patch = new JsonObject
         {
             ["advanced"] = BuildAdvancedJson(advanced)
         };
-        var updated = await client.UpdateSettingsAsync(
-            ModuleId,
-            expectedRevision,
-            JsonStructMapper.ToStruct(patch),
-            cancellationToken).ConfigureAwait(false);
-        var values = JsonStructMapper.ToJsonObject(updated.Values);
+        var updated = await _commands.UpdateSettingsAsync(expectedRevision, patch, cancellationToken).ConfigureAwait(false);
+        var values = updated.Values;
         return new ScreenEaseAdvancedSaveResult(
             updated.Revision,
             ParseAdvanced(values["advanced"] as JsonObject));
@@ -274,16 +280,11 @@ public sealed class ScreenEaseToolService
         IReadOnlyList<ScreenEaseRule> rules,
         CancellationToken cancellationToken = default)
     {
-        using var client = HostControlClient.ForDefaultEndpoint();
         var patch = new JsonObject
         {
             ["rules"] = BuildRuleArray(rules)
         };
-        var updated = await client.UpdateSettingsAsync(
-            ModuleId,
-            expectedRevision,
-            JsonStructMapper.ToStruct(patch),
-            cancellationToken).ConfigureAwait(false);
+        var updated = await _commands.UpdateSettingsAsync(expectedRevision, patch, cancellationToken).ConfigureAwait(false);
         return updated.Revision;
     }
 
@@ -292,16 +293,11 @@ public sealed class ScreenEaseToolService
         ScreenEaseReminder reminder,
         CancellationToken cancellationToken = default)
     {
-        using var client = HostControlClient.ForDefaultEndpoint();
         var patch = new JsonObject
         {
             ["reminder"] = BuildReminderJson(reminder)
         };
-        var updated = await client.UpdateSettingsAsync(
-            ModuleId,
-            expectedRevision,
-            JsonStructMapper.ToStruct(patch),
-            cancellationToken).ConfigureAwait(false);
+        var updated = await _commands.UpdateSettingsAsync(expectedRevision, patch, cancellationToken).ConfigureAwait(false);
         return updated.Revision;
     }
 
@@ -550,50 +546,29 @@ public sealed class ScreenEaseToolService
                 ReadString(runtime, "message")));
     }
 
-    private static IReadOnlyList<ScreenEaseHotkey> ParseHotkeys(
-        JsonArray? configuredHotkeys,
-        IEnumerable<HostProto.RuntimeHotkeyDiagnostics> diagnostics)
+    private static IReadOnlyList<ScreenEaseHotkey> ParseHotkeys(JsonArray? configuredHotkeys)
     {
         var configured = (configuredHotkeys ?? [])
             .OfType<JsonObject>()
             .Where(item => ReadString(item, "id").Length > 0)
             .ToDictionary(item => ReadString(item, "id"), StringComparer.OrdinalIgnoreCase);
-        var runtime = diagnostics
-            .Where(item => string.Equals(item.ModuleId, ModuleId, StringComparison.OrdinalIgnoreCase))
-            .GroupBy(item => LocalHotkeyId(item.Id), StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.Last(), StringComparer.OrdinalIgnoreCase);
-
         return HotkeyDefaults.Select(definition =>
         {
             configured.TryGetValue(definition.Id, out var saved);
-            runtime.TryGetValue(definition.Id, out var live);
             var savedEnabled = ReadBool(saved, "enabled");
-            var state = live?.State ?? (savedEnabled ? "pending" : "disabled");
-            var enabled = live is not null
-                ? !string.Equals(state, "disabled", StringComparison.OrdinalIgnoreCase)
-                : savedEnabled;
-            var gesture = live?.Gesture;
-            if (string.IsNullOrWhiteSpace(gesture))
-            {
-                gesture = ReadString(saved, "gesture", definition.DefaultGesture);
-            }
+            var state = savedEnabled ? "pending" : "disabled";
+            var gesture = ReadString(saved, "gesture", definition.DefaultGesture);
 
             return new ScreenEaseHotkey(
                 definition.Id,
                 definition.Title,
                 definition.CommandId,
                 gesture,
-                string.IsNullOrWhiteSpace(live?.DefaultGesture) ? definition.DefaultGesture : live.DefaultGesture,
-                enabled,
+                definition.DefaultGesture,
+                savedEnabled,
                 state,
-                live?.Message ?? "");
+                "");
         }).ToArray();
-    }
-
-    private static string LocalHotkeyId(string id)
-    {
-        var prefix = ModuleId + ".";
-        return id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? id[prefix.Length..] : id;
     }
 
     private static readonly (string Id, string Title, string CommandId, string DefaultGesture)[] HotkeyDefaults =

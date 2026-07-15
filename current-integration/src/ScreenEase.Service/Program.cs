@@ -1,25 +1,31 @@
 using System.Buffers.Binary;
 using System.IO.Pipes;
-using System.Text;
 using System.Text.Json;
-
-// ScreenEase Service Unit — supervised by MyPowerTools.ServiceManager.
-//
-// Role: own a long-running process whose life is independent of the Shell and Runner, so that
-// eye-care state survives Shell/Runner restarts. It exposes a named-pipe readiness probe on
-// `screenease.core` (matching the upstream ScreenEase.CoreService pipe name) and answers the
-// length-prefixed binary-JSON `ping` command the upstream protocol defines, so a ServiceManager
-// readiness probe and future command proxying use the expected wire format.
-//
-// This initial cut focuses on proving the supervised-unit lifecycle (start/stop/restart/
-// re-adoption across ServiceManager restarts) with a real process. The eye-care gamma/overlay
-// engine continues to be driven by the in-proc ScreenEaseModule until a later change routes
-// hardware writes through this service.
+using System.Text.Json.Nodes;
+using MyPowerTools.Abstractions;
+using MyPowerTools.Platform.Abstractions;
+using ScreenEase.MyPowerTools;
 
 var pipeName = GetOption(args, "--pipe") ?? "screenease.core";
 var heartbeatFile = GetOption(args, "--heartbeat-file");
-var instanceToken = GetOption(args, "--instance-token") ?? "";
 var intervalMs = int.TryParse(GetOption(args, "--interval-ms"), out var iv) ? iv : 1000;
+var logicalOnly = args.Contains("--logical-only", StringComparer.OrdinalIgnoreCase);
+var toolDataRoot = Environment.GetEnvironmentVariable("MPT_TOOL_DATA_ROOT");
+if (string.IsNullOrWhiteSpace(toolDataRoot))
+{
+    toolDataRoot = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "MyPowerTools",
+        "state",
+        "tools",
+        "screenease");
+}
+
+var cacheRoot = Path.Combine(toolDataRoot, "cache");
+var logRoot = Path.Combine(toolDataRoot, "logs");
+Directory.CreateDirectory(toolDataRoot);
+Directory.CreateDirectory(cacheRoot);
+Directory.CreateDirectory(logRoot);
 
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
@@ -27,149 +33,208 @@ Console.CancelKeyPress += (_, e) =>
     e.Cancel = true;
     cts.Cancel();
 };
-
 AppDomain.CurrentDomain.ProcessExit += (_, _) => cts.Cancel();
 
+var module = logicalOnly
+    ? new ScreenEaseModule(new UnsupportedDisplayService("verification", "Logical-only service verification."))
+    : new ScreenEaseModule();
+var initialized = await module.InitializeAsync(
+    new ModuleContext(
+        HostVersion: "screenease-service/0.2.0",
+        ProtocolVersion: "1.0",
+        PackageId: "screenease",
+        ModuleId: "screenease",
+        DataDirectory: toolDataRoot,
+        CacheDirectory: cacheRoot,
+        LogDirectory: logRoot,
+        Platform: OperatingSystem.IsWindows() ? "windows" : "portable",
+        GrantedCapabilities: []),
+    cts.Token);
+if (!initialized.Ok)
+{
+    Console.Error.WriteLine("ScreenEase.Service failed to initialize the ScreenEase runtime.");
+    return 2;
+}
+
 var pid = Environment.ProcessId;
-Console.WriteLine($"ScreenEase.Service starting pid={pid} pipe={pipeName} token={instanceToken}");
+Console.WriteLine($"ScreenEase.Service active pid={pid} pipe={pipeName} data={toolDataRoot}");
+var settingsRevision = new SettingsRevisionStore(Path.Combine(toolDataRoot, "settings.revision"));
+var pipeTask = Task.Run(() => ServePipeAsync(pipeName, module, settingsRevision, cts.Token));
 
-var pipeCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
-_ = Task.Run(() => ServeReadinessPipe(pipeName, pipeCts.Token));
-
-// Heartbeat loop: proves the unit is alive both to stdout (captured by UnitLogStore) and to an
-// optional external file the gate can inspect.
 try
 {
     while (!cts.Token.IsCancellationRequested)
     {
         var line = $"heartbeat pid={pid} ts={DateTimeOffset.UtcNow:O}";
         Console.WriteLine(line);
-        if (!string.IsNullOrEmpty(heartbeatFile))
+        if (!string.IsNullOrWhiteSpace(heartbeatFile))
         {
             try
             {
+                var parent = Path.GetDirectoryName(heartbeatFile);
+                if (!string.IsNullOrWhiteSpace(parent)) Directory.CreateDirectory(parent);
                 await File.AppendAllTextAsync(heartbeatFile, line + Environment.NewLine, cts.Token);
             }
-            catch
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                // heartbeat file is best-effort
+                Console.Error.WriteLine($"ScreenEase.Service heartbeat write failed: {exception.Message}");
             }
         }
 
-        try
-        {
-            await Task.Delay(intervalMs, cts.Token);
-        }
-        catch (TaskCanceledException)
-        {
-            break;
-        }
+        await Task.Delay(intervalMs, cts.Token);
     }
 }
-catch (OperationCanceledException)
+catch (OperationCanceledException) when (cts.IsCancellationRequested)
 {
-    // expected on stop
+}
+finally
+{
+    cts.Cancel();
+    try { await pipeTask; } catch (OperationCanceledException) { }
+    await module.DisposeAsync(CancellationToken.None);
 }
 
-Console.WriteLine($"ScreenEase.Service stopping pid={pid}");
+Console.WriteLine($"ScreenEase.Service stopped pid={pid}");
 return 0;
 
-// Named-pipe readiness server. Speaks the ScreenEase native-messaging wire format:
-// each message = 4-byte little-endian length + UTF-8 JSON payload. Responds to the
-// canonical `ping` command (and aliases) with the upstream NativeHostResponse shape.
-static async Task ServeReadinessPipe(string name, CancellationToken cancellationToken)
+static async Task ServePipeAsync(
+    string name,
+    ScreenEaseModule module,
+    SettingsRevisionStore settingsRevision,
+    CancellationToken cancellationToken)
 {
     while (!cancellationToken.IsCancellationRequested)
     {
-        NamedPipeServerStream? server = null;
+        await using var server = new NamedPipeServerStream(
+            name,
+            PipeDirection.InOut,
+            NamedPipeServerStream.MaxAllowedServerInstances,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         try
         {
-            server = new NamedPipeServerStream(name, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
             await server.WaitForConnectionAsync(cancellationToken);
-
-            using var reader = new StreamReader(stream: server, leaveOpen: true);
-            using var writer = new StreamWriter(stream: server, leaveOpen: true);
-
-            // The upstream server supports multiple framed messages per connection.
             while (server.IsConnected && !cancellationToken.IsCancellationRequested)
             {
-                var request = await ReadFramedMessageAsync(server, cancellationToken);
-                if (request is null)
-                {
-                    break; // client closed
-                }
-
-                var command = ExtractCommand(request);
-                object? data = command switch
-                {
-                    "ping" => new { pong = true },
-                    "state" or "get_state" => new { pid = Environment.ProcessId, state = "active" },
-                    _ => null
-                };
-
-                var ok = data is not null;
-                var response = new
-                {
-                    ok,
-                    command,
-                    data,
-                    error = ok ? null : $"Unknown command '{command}'."
-                };
-
+                using var request = await ReadFramedMessageAsync(server, cancellationToken);
+                if (request is null) break;
+                var response = await HandleRequestAsync(module, settingsRevision, request.RootElement, cancellationToken);
                 await WriteFramedMessageAsync(server, response, cancellationToken);
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             break;
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            // a single failed connection must not kill the readiness server
-            try { Console.Error.WriteLine($"ScreenEase.Service pipe error: {ex.Message}"); } catch { }
-        }
-        finally
-        {
-            server?.Dispose();
+            Console.Error.WriteLine($"ScreenEase.Service pipe error: {exception.Message}");
         }
     }
 }
 
-// Chromium-native-messaging framing: 4-byte LE length header + UTF-8 JSON body.
+static async Task<object> HandleRequestAsync(
+    ScreenEaseModule module,
+    SettingsRevisionStore settingsRevision,
+    JsonElement request,
+    CancellationToken cancellationToken)
+{
+    var command = ReadString(request, "command", "state");
+    try
+    {
+        object data = command switch
+        {
+            "ping" => new { pong = true },
+            "state" or "get_state" => new { pid = Environment.ProcessId, state = "active" },
+            "moduleStatus" => await module.GetStatusAsync(cancellationToken),
+            "listCommands" => await module.ListCommandsAsync(cancellationToken),
+            "execute" => await ExecuteAsync(module, request, cancellationToken),
+            "getSettings" => (await module.GetSettingsAsync(cancellationToken)) with
+            {
+                Revision = settingsRevision.Current
+            },
+            "updateSettings" => await UpdateSettingsAsync(module, settingsRevision, request, cancellationToken),
+            _ => throw new InvalidOperationException($"Unknown command '{command}'.")
+        };
+        return new { ok = true, command, data };
+    }
+    catch (Exception exception)
+    {
+        Console.Error.WriteLine($"ScreenEase.Service command '{command}' failed: {exception}");
+        return new { ok = false, command, error = exception.Message };
+    }
+}
+
+static async Task<CommandExecutionResult> ExecuteAsync(
+    ScreenEaseModule module,
+    JsonElement request,
+    CancellationToken cancellationToken)
+{
+    var invocationId = ReadString(request, "invocationId", Guid.NewGuid().ToString("N"));
+    var commandId = ReadString(request, "commandId", "");
+    var commandArgs = request.TryGetProperty("args", out var argsElement) && argsElement.ValueKind == JsonValueKind.Object
+        ? JsonNode.Parse(argsElement.GetRawText()) as JsonObject ?? new JsonObject()
+        : new JsonObject();
+    return await module.ExecuteCommandAsync(
+        new CommandRequest(invocationId, commandId, commandArgs),
+        cancellationToken);
+}
+
+static async Task<SettingsSnapshotDocument> UpdateSettingsAsync(
+    ScreenEaseModule module,
+    SettingsRevisionStore settingsRevision,
+    JsonElement request,
+    CancellationToken cancellationToken)
+{
+    var current = (await module.GetSettingsAsync(cancellationToken)) with
+    {
+        Revision = settingsRevision.Current
+    };
+    var expectedRevision = request.TryGetProperty("expectedRevision", out var revisionElement) && revisionElement.TryGetUInt64(out var revision)
+        ? revision
+        : current.Revision;
+    if (expectedRevision != current.Revision)
+    {
+        throw new InvalidOperationException(
+            $"Settings revision conflict: expected {expectedRevision}, current {current.Revision}.");
+    }
+
+    var patch = request.TryGetProperty("patch", out var patchElement) && patchElement.ValueKind == JsonValueKind.Object
+        ? JsonNode.Parse(patchElement.GetRawText()) as JsonObject ?? new JsonObject()
+        : new JsonObject();
+    var validation = await module.ValidateSettingsAsync(
+        new SettingsPatch("screenease", expectedRevision, patch),
+        cancellationToken);
+    if (!validation.Ok)
+    {
+        throw new InvalidOperationException(string.Join("; ", validation.Messages));
+    }
+
+    var nextRevision = checked(current.Revision + 1);
+    var updated = await module.ApplySettingsAsync(
+        new SettingsSnapshotDocument(
+            "screenease",
+            nextRevision,
+            patch,
+            DateTimeOffset.UtcNow),
+        cancellationToken);
+    settingsRevision.Commit(nextRevision);
+    return updated with { Revision = nextRevision };
+}
+
 static async Task<JsonDocument?> ReadFramedMessageAsync(Stream stream, CancellationToken cancellationToken)
 {
     var header = new byte[4];
-    var read = 0;
-    while (read < 4)
-    {
-        var n = await stream.ReadAsync(header.AsMemory(read, 4 - read), cancellationToken);
-        if (n == 0)
-        {
-            return read == 0 ? null : throw new EndOfStreamException();
-        }
-
-        read += n;
-    }
+    if (!await ReadExactlyOrEofAsync(stream, header, cancellationToken)) return null;
 
     var length = BinaryPrimitives.ReadInt32LittleEndian(header);
-    if (length <= 0 || length > 1024 * 1024)
+    if (length <= 0 || length > 4 * 1024 * 1024)
     {
-        throw new InvalidDataException($"Invalid message length {length}");
+        throw new InvalidDataException($"Invalid message length {length}.");
     }
 
     var payload = new byte[length];
-    read = 0;
-    while (read < length)
-    {
-        var n = await stream.ReadAsync(payload.AsMemory(read, length - read), cancellationToken);
-        if (n == 0)
-        {
-            throw new EndOfStreamException();
-        }
-
-        read += n;
-    }
-
+    await ReadExactlyAsync(stream, payload, cancellationToken);
     return JsonDocument.Parse(payload);
 }
 
@@ -180,7 +245,6 @@ static async Task WriteFramedMessageAsync(Stream stream, object message, Cancell
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     });
-
     var header = new byte[4];
     BinaryPrimitives.WriteInt32LittleEndian(header, json.Length);
     await stream.WriteAsync(header, cancellationToken);
@@ -188,29 +252,77 @@ static async Task WriteFramedMessageAsync(Stream stream, object message, Cancell
     await stream.FlushAsync(cancellationToken);
 }
 
-// Upstream priority: "command" -> "type" -> "action" -> default "state".
-static string ExtractCommand(JsonDocument doc)
+static async Task<bool> ReadExactlyOrEofAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken)
 {
-    foreach (var key in new[] { "command", "type", "action" })
+    var offset = 0;
+    while (offset < buffer.Length)
     {
-        if (doc.RootElement.TryGetProperty(key, out var el) && el.ValueKind == JsonValueKind.String)
+        var read = await stream.ReadAsync(buffer[offset..], cancellationToken);
+        if (read == 0)
         {
-            return el.GetString()?.Trim().ToLowerInvariant() ?? "state";
+            if (offset == 0) return false;
+            throw new EndOfStreamException();
         }
+        offset += read;
     }
-
-    return "state";
+    return true;
 }
 
-static string? GetOption(string[] args, string name)
+static async Task ReadExactlyAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken)
 {
-    for (var i = 0; i < args.Length - 1; i++)
+    if (!await ReadExactlyOrEofAsync(stream, buffer, cancellationToken))
     {
-        if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
+        throw new EndOfStreamException();
+    }
+}
+
+static string ReadString(JsonElement element, string name, string fallback) =>
+    element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        ? value.GetString() ?? fallback
+        : fallback;
+
+static string? GetOption(string[] values, string name)
+{
+    for (var index = 0; index < values.Length - 1; index++)
+    {
+        if (string.Equals(values[index], name, StringComparison.OrdinalIgnoreCase))
         {
-            return args[i + 1];
+            return values[index + 1];
         }
     }
-
     return null;
+}
+
+internal sealed class SettingsRevisionStore
+{
+    private readonly string _path;
+
+    public SettingsRevisionStore(string path)
+    {
+        _path = path;
+        Current = Read(path);
+    }
+
+    public ulong Current { get; private set; }
+
+    public void Commit(ulong revision)
+    {
+        var directory = Path.GetDirectoryName(_path);
+        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+        var temporary = _path + ".tmp";
+        File.WriteAllText(temporary, revision.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        File.Move(temporary, _path, overwrite: true);
+        Current = revision;
+    }
+
+    private static ulong Read(string path)
+    {
+        if (File.Exists(path) &&
+            ulong.TryParse(File.ReadAllText(path), out var revision) &&
+            revision > 0)
+        {
+            return revision;
+        }
+        return 1;
+    }
 }

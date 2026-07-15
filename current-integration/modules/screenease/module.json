@@ -16,7 +16,7 @@
         "macos-arm64"
       ],
       "assembly": "ScreenEase.MyPowerTools.dll",
-      "type": "ScreenEase.MyPowerTools.ScreenEaseModule"
+      "type": "ScreenEase.MyPowerTools.ScreenEaseServiceProxyModule"
     }
   ],
   "capabilities": [

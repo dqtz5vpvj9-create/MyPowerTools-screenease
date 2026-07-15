@@ -42,11 +42,7 @@ public sealed class ScreenEaseSurfaceFactory : IMptAvaloniaSurfaceFactory
             },
             apply: async (profileId, displayId, hardwareWrite) =>
             {
-                var result = await context.ExecuteCommandAsync(
-                    "screenease.profile.apply",
-                    ScreenEaseToolService.BuildApplyArgs(profileId, displayId, hardwareWrite),
-                    CancellationToken.None);
-                EnsureSuccess(result);
+                await tools.ApplyProfileAsync(profileId, displayId, hardwareWrite);
                 Info(context, $"Applied ScreenEase profile '{profileId}'.");
             },
             applyManual: async (colorTemperatureKelvin, brightnessPercent, hardwareWrite) =>
@@ -113,11 +109,4 @@ public sealed class ScreenEaseSurfaceFactory : IMptAvaloniaSurfaceFactory
         context.Log(new MptSurfaceLogEntry("info", message, DateTimeOffset.Now));
     }
 
-    private static void EnsureSuccess(CommandExecutionResult result)
-    {
-        if (!result.Success)
-        {
-            throw new InvalidOperationException(result.Error?.Message ?? result.Output ?? "Command failed.");
-        }
-    }
 }
