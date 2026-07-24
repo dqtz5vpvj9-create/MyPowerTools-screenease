@@ -234,7 +234,7 @@ internal sealed class ScreenEaseServicePipeClient
             ".",
             pipeName,
             PipeDirection.InOut,
-            PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            PipeOptions.Asynchronous);
         await pipe.ConnectAsync(timeout.Token);
 
         var payload = JsonSerializer.SerializeToUtf8Bytes(request);

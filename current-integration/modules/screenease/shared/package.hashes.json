@@ -7,47 +7,7 @@
     },
     {
       "Path": "module.json",
-      "Sha256": "ffae6b80eab8d1d7eb1717081bd48d001d26a977e568da8861905949157a0bec"
-    },
-    {
-      "Path": "MyPowerTools.Platform.Abstractions.dll",
-      "Sha256": "056d9aea19b343a54d9cd1f9ddc80f014edb6d379423fe863bd4e0fea06dcff9"
-    },
-    {
-      "Path": "MyPowerTools.Platform.Abstractions.pdb",
-      "Sha256": "0eafc6280062b4f06811edad8f12dc7af12afe508df2bfee187b30e43ae3067a"
-    },
-    {
-      "Path": "MyPowerTools.Platform.Linux.dll",
-      "Sha256": "12dfdb339b90373ceb5376f614cd767e1c31cf97f82e0ae5987ead885a4f01c1"
-    },
-    {
-      "Path": "MyPowerTools.Platform.Linux.pdb",
-      "Sha256": "450f529c50792c1a7b5ab89a6129f26acb2118d543345e38119b16922168b049"
-    },
-    {
-      "Path": "MyPowerTools.Platform.Mac.dll",
-      "Sha256": "5f2b8c3eea6166c49d2ab11225f8beb6d571b75a349455dd8f4caae09d7c1917"
-    },
-    {
-      "Path": "MyPowerTools.Platform.Mac.pdb",
-      "Sha256": "cc0f8bc61b2421c406e81580ff99955f6d6e32d99f9be77defabf59947a3b5fb"
-    },
-    {
-      "Path": "MyPowerTools.Platform.Windows.dll",
-      "Sha256": "e1059b3df5f40f960aac85978847af94cc091cb58bd6601e68f2ee60a33a17bf"
-    },
-    {
-      "Path": "MyPowerTools.Platform.Windows.pdb",
-      "Sha256": "84f54aa0675dd9f133f0ac9c26b2b51d146c7ef5073305bece5af2c0db87e171"
-    },
-    {
-      "Path": "ScreenEase.MyPowerTools.dll",
-      "Sha256": "fb2a22a15531fb3558768e4ee0d8e3e2baae4143174b23182eb12dbe0791b8ab"
-    },
-    {
-      "Path": "ScreenEase.MyPowerTools.pdb",
-      "Sha256": "4ac4735e583cd7b2d1eeab0dd787e7ef5e4ffc6028c5e555e4a481f2b40bd1ca"
+      "Sha256": "672310d1e7d7eeaa89fab53d457e8221efc48e89bbaa4283ddbe7a40213f73a0"
     },
     {
       "Path": "ui/dashboard-card.json",
@@ -67,7 +27,7 @@
     },
     {
       "Path": "ui/tool.json",
-      "Sha256": "28afeb8269e599981c9acce8b1fd917c0f06f5cb7e55043cac6dacf9c0c01763"
+      "Sha256": "a691358bc4a160eb5222a65ddbb460f3b5d6cdeea3946dd986ef20f9fd5181e2"
     }
   ]
 }

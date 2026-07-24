@@ -3,6 +3,7 @@ using System.IO.Pipes;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using MyPowerTools.Abstractions;
+using MyPowerTools.Ipc;
 using MyPowerTools.Platform.Abstractions;
 using ScreenEase.MyPowerTools;
 
@@ -105,12 +106,7 @@ static async Task ServePipeAsync(
 {
     while (!cancellationToken.IsCancellationRequested)
     {
-        await using var server = new NamedPipeServerStream(
-            name,
-            PipeDirection.InOut,
-            NamedPipeServerStream.MaxAllowedServerInstances,
-            PipeTransmissionMode.Byte,
-            PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        await using var server = MptNamedPipePolicy.CreateServer(name);
         try
         {
             await server.WaitForConnectionAsync(cancellationToken);

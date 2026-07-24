@@ -226,7 +226,7 @@ public sealed partial class ScreenEaseViewModel : MyPowerTools.AvaloniaSdk.ToolS
     {
         if (Volatile.Read(ref _disposed) == 0)
         {
-            ShellCommandFaultBoundary.Run(
+            MptCommandFaultBoundary.Run(
                 this,
                 "Refresh ScreenEase reminder timer",
                 TickReminderAsync);

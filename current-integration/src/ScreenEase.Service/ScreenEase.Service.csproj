@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ScreenEase.MyPowerTools\ScreenEase.MyPowerTools.csproj" />
+    <ProjectReference Include="..\..\..\..\..\src\MyPowerTools.Ipc.Shared\MyPowerTools.Ipc.Shared.csproj" />
   </ItemGroup>
 
 </Project>

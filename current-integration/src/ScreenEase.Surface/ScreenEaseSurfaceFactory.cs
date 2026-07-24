@@ -19,10 +19,29 @@ public sealed class ScreenEaseSurfaceFactory : IMptAvaloniaSurfaceFactory
 {
     public Control CreateSurface(MptAvaloniaSurfaceContext context)
     {
-        return CreateAsync(context).GetAwaiter().GetResult();
+        var host = new ContentControl
+        {
+            Content = CreateLoadingView()
+        };
+
+        _ = PopulateAsync(host, context);
+        return host;
     }
 
-    private static async Task<UserControl> CreateAsync(MptAvaloniaSurfaceContext context)
+    private static async Task PopulateAsync(ContentControl host, MptAvaloniaSurfaceContext context)
+    {
+        try
+        {
+            host.Content = await CreateLoadedSurfaceAsync(context);
+        }
+        catch (Exception ex)
+        {
+            Info(context, $"ScreenEase failed to load: {ex.Message}");
+            host.Content = CreateFailureView(host, context, ex.Message);
+        }
+    }
+
+    private static async Task<UserControl> CreateLoadedSurfaceAsync(MptAvaloniaSurfaceContext context)
     {
         var tools = new ScreenEaseToolService(context.ServiceUnits);
 
@@ -102,6 +121,50 @@ public sealed class ScreenEaseSurfaceFactory : IMptAvaloniaSurfaceFactory
 
         Info(context, $"ScreenEase loaded: {viewModel.DisplayCountText}, {viewModel.ProfileCountText}.");
         return new ScreenEaseView { DataContext = viewModel };
+    }
+
+    private static Control CreateLoadingView() =>
+        new Border
+        {
+            Padding = new Avalonia.Thickness(32),
+            Child = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new TextBlock { Text = "ScreenEase", FontSize = 30, FontWeight = Avalonia.Media.FontWeight.SemiBold },
+                    new TextBlock { Text = "正在连接 ScreenEase Service…" },
+                    new ProgressBar { IsIndeterminate = true, Width = 240, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left }
+                }
+            }
+        };
+
+    private static Control CreateFailureView(
+        ContentControl host,
+        MptAvaloniaSurfaceContext context,
+        string message)
+    {
+        var retry = new Button { Content = "重试", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left };
+        retry.Click += (_, _) =>
+        {
+            host.Content = CreateLoadingView();
+            _ = PopulateAsync(host, context);
+        };
+
+        return new Border
+        {
+            Padding = new Avalonia.Thickness(32),
+            Child = new StackPanel
+            {
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock { Text = "ScreenEase 暂时无法连接", FontSize = 26, FontWeight = Avalonia.Media.FontWeight.SemiBold },
+                    new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                    retry
+                }
+            }
+        };
     }
 
     private static void Info(MptAvaloniaSurfaceContext context, string message)
