@@ -260,8 +260,10 @@
         </Grid>
       </Border>
 
+      <ScrollViewer Grid.Column="1"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
       <StackPanel x:Name="ContentPanel"
-                  Grid.Column="1"
                    Margin="{DynamicResource MptPagePadding}"
                   MaxWidth="1500"
                   HorizontalAlignment="Stretch"
@@ -405,7 +407,7 @@
                                        AutomationProperties.Name="模式名称"
                                        Text="{Binding ModeName, Mode=TwoWay}" />
                   <controls:MptButton Grid.Column="1"
-                                      Classes="ScreenEaseSecondary"
+                                      Classes="ScreenEasePrimary"
                                       Content="保存"
                                       Command="{Binding SaveModeCommand}" />
                   <controls:MptButton Grid.Column="2"
@@ -829,6 +831,7 @@
           </Grid>
         </Border>
       </StackPanel>
+      </ScrollViewer>
     </Grid>
   </Grid>
 </UserControl>

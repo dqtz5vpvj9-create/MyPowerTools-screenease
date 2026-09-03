@@ -72,9 +72,7 @@ try
         {
             try
             {
-                var parent = Path.GetDirectoryName(heartbeatFile);
-                if (!string.IsNullOrWhiteSpace(parent)) Directory.CreateDirectory(parent);
-                await File.AppendAllTextAsync(heartbeatFile, line + Environment.NewLine, cts.Token);
+                await AppendHeartbeatAsync(heartbeatFile, line, cts.Token);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -97,6 +95,20 @@ finally
 
 Console.WriteLine($"ScreenEase.Service stopped pid={pid}");
 return 0;
+
+static async Task AppendHeartbeatAsync(string path, string line, CancellationToken cancellationToken)
+{
+    const long maxHeartbeatBytes = 4L * 1024 * 1024;
+    var parent = Path.GetDirectoryName(path);
+    if (!string.IsNullOrWhiteSpace(parent)) Directory.CreateDirectory(parent);
+    var current = new FileInfo(path);
+    if (current.Exists && current.Length >= maxHeartbeatBytes)
+    {
+        File.Move(path, path + ".1", overwrite: true);
+    }
+
+    await File.AppendAllTextAsync(path, line + Environment.NewLine, cancellationToken);
+}
 
 static async Task ServePipeAsync(
     string name,

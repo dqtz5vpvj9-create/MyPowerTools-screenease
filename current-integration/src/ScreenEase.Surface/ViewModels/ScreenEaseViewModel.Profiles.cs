@@ -277,9 +277,15 @@ public sealed partial class ScreenEaseViewModel
         {
             await action().ConfigureAwait(true);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            OperationMessage = "操作失败。请稍后重试，或在“系统”中查看运行日志。";
+            OperationMessage = ex switch
+            {
+                _ when ex.Message.Contains("pipe") || ex.Message.Contains("connection") || ex.Message.Contains("unavailable", StringComparison.OrdinalIgnoreCase)
+                    => "服务连接中断，请稍后重试。",
+                InvalidOperationException => $"操作无效：{ex.Message}",
+                _ => $"操作失败：{ex.Message}"
+            };
         }
         finally
         {

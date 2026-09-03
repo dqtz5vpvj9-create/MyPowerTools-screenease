@@ -711,7 +711,6 @@ public sealed class ScreenEaseModule : IMptModule
             NativeHost = new ScreenEaseNativeHostState(true, writer.Available, nativeResult.Message),
             UpdatedAt = appliedAt
         };
-        Store.Save(state);
 
         var payload = BuildPlan(state, profile, displays, displayId);
         payload["effect"] = state.GetEffect().ToJson();
@@ -721,6 +720,8 @@ public sealed class ScreenEaseModule : IMptModule
         {
             return Failed(request, MptErrorCodes.RuntimeUnavailable, nativeResult.Message);
         }
+
+        Store.Save(state);
 
         return Succeeded(request, payload.ToJsonString());
     }
@@ -1449,16 +1450,28 @@ public sealed class ScreenEaseModule : IMptModule
     {
         if (context.TryGetCapability<IDisplayService>("display.profile", out var display))
         {
-            return OperatingSystem.IsWindows() && display is INativeDisplayInventoryService
-                ? new ScreenEaseWindowsGammaDisplayService(display)
+            if (OperatingSystem.IsWindows() && display is INativeDisplayInventoryService)
+            {
+                return new ScreenEaseWindowsGammaDisplayService(display);
+            }
+
+            // The macOS pack exposes an inventory-only display provider, so the CoreGraphics gamma
+            // driver always wraps whatever the host injected.
+            return OperatingSystem.IsMacOS()
+                ? new ScreenEaseMacGammaDisplayService(display)
                 : display;
         }
 
         var unsupported = new UnsupportedDisplayService(
             "display.profile",
             "No display capability provider was injected by the host runtime.");
-        return OperatingSystem.IsWindows()
-            ? new ScreenEaseWindowsGammaDisplayService(unsupported)
+        if (OperatingSystem.IsWindows())
+        {
+            return new ScreenEaseWindowsGammaDisplayService(unsupported);
+        }
+
+        return OperatingSystem.IsMacOS()
+            ? new ScreenEaseMacGammaDisplayService(unsupported)
             : unsupported;
     }
 
