@@ -245,6 +245,7 @@ public sealed partial class ScreenEaseViewModel
         OnPropertyChanged(nameof(NativeWriterTechnicalDetails));
         OnPropertyChanged(nameof(DisplayCountText));
 
+        _modeDrafts.Clear();
         Modes.Clear();
         foreach (var profile in imported.Profiles
                      .OrderBy(profile => ModeSortOrder(profile.Id))
