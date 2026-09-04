@@ -95,7 +95,10 @@ public sealed partial class ScreenEaseViewModel
     public string ModeName
     {
         get => _modeName;
-        set => SetProperty(ref _modeName, value);
+        set
+        {
+            if (SetProperty(ref _modeName, value ?? "")) CaptureModeDraft();
+        }
     }
 
     public double ColorTemperature
@@ -107,6 +110,7 @@ public sealed partial class ScreenEaseViewModel
             if (SetProperty(ref _colorTemperature, normalized))
             {
                 OnPropertyChanged(nameof(ColorTemperatureText));
+                CaptureModeDraft();
             }
         }
     }
@@ -120,6 +124,7 @@ public sealed partial class ScreenEaseViewModel
             if (SetProperty(ref _brightness, normalized))
             {
                 OnPropertyChanged(nameof(BrightnessText));
+                CaptureModeDraft();
             }
         }
     }
@@ -145,6 +150,7 @@ public sealed partial class ScreenEaseViewModel
             if (SetProperty(ref _isBusy, value))
             {
                 NotifyCommandStates();
+                NotifyModeDraftState();
             }
         }
     }

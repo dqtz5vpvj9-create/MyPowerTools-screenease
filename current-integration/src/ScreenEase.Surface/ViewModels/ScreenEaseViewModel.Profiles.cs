@@ -37,9 +37,9 @@ public sealed partial class ScreenEaseViewModel
 
         SelectedMode = mode;
         _modeId = mode.Id;
-        ModeName = mode.Name;
         mode.SetShowNightValues(EditingNightValues);
         LoadSelectedModeValues();
+        NotifyModeDraftState();
         OperationMessage = "";
     }
 
@@ -50,12 +50,15 @@ public sealed partial class ScreenEaseViewModel
             return;
         }
 
-        ColorTemperature = EditingNightValues
-            ? SelectedMode.Profile.EffectiveNightColorTemperature
-            : SelectedMode.Profile.ColorTemperature;
-        Brightness = EditingNightValues
-            ? SelectedMode.Profile.EffectiveNightBrightness
-            : SelectedMode.Profile.Brightness;
+        _loadingModeDraft = true;
+        try
+        {
+            var draft = CurrentModeDraft;
+            ModeName = draft.Name;
+            ColorTemperature = EditingNightValues ? draft.EffectiveNightColorTemperature : draft.ColorTemperature;
+            Brightness = EditingNightValues ? draft.EffectiveNightBrightness : draft.Brightness;
+        }
+        finally { _loadingModeDraft = false; }
     }
 
     private async Task ToggleEyeCareAsync()
@@ -211,18 +214,14 @@ public sealed partial class ScreenEaseViewModel
             _modeId = $"custom-{Guid.NewGuid():N}";
         }
 
-        profile = new ScreenEaseProfile(
-            _modeId,
-            ModeName.Trim(),
-            EditingNightValues && SelectedMode is not null ? SelectedMode.Profile.Brightness : (int)Math.Round(Brightness),
-            EditingNightValues && SelectedMode is not null ? SelectedMode.Profile.ColorTemperature : (int)Math.Round(ColorTemperature),
-            EditingNightValues ? (int)Math.Round(Brightness) : SelectedMode?.Profile.EffectiveNightBrightness ?? (int)Math.Round(Brightness),
-            EditingNightValues ? (int)Math.Round(ColorTemperature) : SelectedMode?.Profile.EffectiveNightColorTemperature ?? (int)Math.Round(ColorTemperature));
+        CaptureModeDraft();
+        profile = CurrentModeDraft with { Id = _modeId, Name = ModeName.Trim() };
         return true;
     }
 
     private void UpsertMode(ScreenEaseProfile profile)
     {
+        _modeDrafts.Remove(profile.Id);
         var existing = Modes.FirstOrDefault(mode =>
             string.Equals(mode.Id, profile.Id, StringComparison.OrdinalIgnoreCase));
         if (existing is null)

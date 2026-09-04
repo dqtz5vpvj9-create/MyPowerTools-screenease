@@ -141,6 +141,7 @@ public sealed partial class ScreenEaseViewModel : MyPowerTools.AvaloniaSdk.ToolS
         RefreshCommand = new MptAsyncRelayCommand(() => refresh?.Invoke() ?? Task.CompletedTask);
         ToggleEyeCareCommand = new MptAsyncRelayCommand(ToggleEyeCareAsync, () => !IsBusy);
         SaveModeCommand = new MptAsyncRelayCommand(SaveModeAsync, () => !IsBusy);
+        ResetModeDraftCommand = new MptAsyncRelayCommand(ResetModeDraftAsync, () => !IsBusy && HasUnsavedModeChanges);
         NewModeCommand = new MptAsyncRelayCommand(NewModeAsync, () => !IsBusy);
         ApplyCurrentCommand = new MptAsyncRelayCommand(ApplyCurrentAsync, () => !IsBusy);
         SaveReminderCommand = new MptAsyncRelayCommand(SaveReminderAsync, () => !IsBusy);
@@ -199,6 +200,7 @@ public sealed partial class ScreenEaseViewModel : MyPowerTools.AvaloniaSdk.ToolS
     public ICommand RefreshCommand { get; }
     public ICommand ToggleEyeCareCommand { get; }
     public ICommand SaveModeCommand { get; }
+    public ICommand ResetModeDraftCommand { get; }
     public ICommand NewModeCommand { get; }
     public ICommand ApplyCurrentCommand { get; }
     public ICommand SaveReminderCommand { get; }
