@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:shortcuts="using:MyPowerTools.AvaloniaSdk"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:primitives="using:Avalonia.Controls.Primitives"
              xmlns:controls="using:MyPowerTools.UI.Controls"
@@ -254,7 +255,7 @@
           <controls:MptButton Grid.Row="2"
                               Classes="ScreenEasePrimary"
                               Content="{Binding EyeCareActionLabel}"
-                              Command="{Binding ToggleEyeCareCommand}"
+                              Command="{Binding ToggleEyeCareCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.toggle-eye-care"
                               HorizontalAlignment="Stretch"
                               Margin="{DynamicResource MptGapTopM}" />
         </Grid>
@@ -287,7 +288,7 @@
             <controls:MptButton Grid.Column="1"
                                 Classes="ScreenEaseHeroButton"
                                 Content="{Binding EyeCareActionLabel}"
-                                Command="{Binding ToggleEyeCareCommand}"
+                                Command="{Binding ToggleEyeCareCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.toggle-eye-care"
                                 VerticalAlignment="Center" />
           </Grid>
         </Border>
@@ -295,7 +296,7 @@
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource MptSpacingS}"
                     IsVisible="{Binding HasUnsavedModeChanges}">
           <TextBlock Classes="MptMeta" Text="{Binding ModeDraftStatus}" VerticalAlignment="Center" TextWrapping="Wrap" />
-          <controls:MptButton Content="撤销本模式修改" Command="{Binding ResetModeDraftCommand}" />
+          <controls:MptButton Content="撤销本模式修改" Command="{Binding ResetModeDraftCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.reset-mode-draft" />
         </StackPanel>
 
         <Grid x:Name="WorkspaceGrid"
@@ -392,7 +393,7 @@
                     <controls:MptButton Grid.Column="2"
                                         Classes="ScreenEaseSecondary"
                                         Content="保存时间表"
-                                        Command="{Binding SaveScheduleCommand}"
+                                        Command="{Binding SaveScheduleCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.save-schedule"
                                         VerticalAlignment="Bottom" />
                   </Grid>
                   <TextBlock Text="{Binding ScheduleStatusText}"
@@ -415,17 +416,17 @@
                   <controls:MptButton Grid.Column="1"
                                       Classes="ScreenEasePrimary"
                                       Content="保存"
-                                      Command="{Binding SaveModeCommand}" />
+                                      Command="{Binding SaveModeCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.save-mode" />
                   <controls:MptButton Grid.Column="2"
                                       Classes="ScreenEaseSecondary"
                                       Content="新增"
-                                      Command="{Binding NewModeCommand}" />
+                                      Command="{Binding NewModeCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.new-mode" />
                 </Grid>
               </StackPanel>
 
               <controls:MptButton Classes="ScreenEasePrimary"
                                   Content="{Binding ApplyCurrentLabel}"
-                                  Command="{Binding ApplyCurrentCommand}"
+                                  Command="{Binding ApplyCurrentCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.apply-current"
                                   HorizontalAlignment="Left" />
               <TextBlock Text="{Binding OperationMessage}"
                          FontSize="{DynamicResource MptFontSizeMeta}"
@@ -483,19 +484,19 @@
               <WrapPanel Orientation="Horizontal">
                 <controls:MptButton Classes="ScreenEaseSecondary"
                                     Content="开始"
-                                    Command="{Binding StartReminderCommand}"
+                                    Command="{Binding StartReminderCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.start-reminder"
                                     Margin="{DynamicResource MptWrapItemCompactMargin}" />
                 <controls:MptButton Classes="ScreenEaseSecondary"
                                     Content="暂停"
-                                    Command="{Binding PauseReminderCommand}"
+                                    Command="{Binding PauseReminderCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.pause-reminder"
                                     Margin="{DynamicResource MptWrapItemCompactMargin}" />
                 <controls:MptButton Classes="ScreenEaseSecondary"
                                     Content="继续"
-                                    Command="{Binding ResumeReminderCommand}"
+                                    Command="{Binding ResumeReminderCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.resume-reminder"
                                     Margin="{DynamicResource MptWrapItemCompactMargin}" />
                 <controls:MptButton Classes="ScreenEaseSecondary"
                                     Content="重置"
-                                    Command="{Binding ResetReminderCommand}"
+                                    Command="{Binding ResetReminderCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.reset-reminder"
                                     Margin="{DynamicResource MptGapBottomS}" />
               </WrapPanel>
 
@@ -555,7 +556,7 @@
 
               <controls:MptButton Classes="ScreenEaseSecondary"
                                   Content="保存提醒设置"
-                                  Command="{Binding SaveReminderCommand}"
+                                  Command="{Binding SaveReminderCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.save-reminder"
                                   HorizontalAlignment="Left" />
               <TextBlock Text="{Binding ReminderMessage}"
                          FontSize="{DynamicResource MptFontSizeMeta}"
@@ -599,7 +600,7 @@
                     <controls:MptButton Grid.Column="1"
                                         Classes="ScreenEaseSecondary"
                                         Content="保存过渡设置"
-                                        Command="{Binding SaveAdvancedCommand}"
+                                        Command="{Binding SaveAdvancedCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.save-advanced"
                                         VerticalAlignment="Bottom" />
                   </Grid>
                   <TextBlock Text="{Binding AdvancedMessage}"
@@ -663,7 +664,7 @@
                   </Grid>
                   <controls:MptButton Classes="ScreenEaseSecondary"
                                       Content="应用遮罩设置"
-                                      Command="{Binding SaveOverlayCommand}"
+                                      Command="{Binding SaveOverlayCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.save-overlay"
                                       HorizontalAlignment="Left" />
                   <TextBlock Text="{Binding OverlayRuntimeDetail}"
                              FontSize="{DynamicResource MptFontSizeMeta}"
@@ -697,7 +698,7 @@
                     <controls:MptButton Grid.Column="1"
                                         Classes="ScreenEaseSecondary"
                                         Content="导入"
-                                        Command="{Binding ImportLegacyCommand}" />
+                                        Command="{Binding ImportLegacyCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.import-legacy" />
                   </Grid>
                   <TextBlock Text="导入会替换 ScreenEase 当前模式和相关计划。"
                              FontSize="{DynamicResource MptFontSizeMeta}"
@@ -727,7 +728,7 @@
                     <controls:MptButton Grid.Column="1"
                                         Classes="ScreenEaseSecondary"
                                         Content="打开快捷键设置"
-                                        Command="{Binding OpenHotkeySettingsCommand}"
+                                        Command="{Binding OpenHotkeySettingsCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.open-hotkey-settings"
                                         VerticalAlignment="Center" />
                   </Grid>
                   <TextBlock Text="{Binding HotkeyCountText}"
@@ -759,7 +760,7 @@
 
         <controls:MptButton Classes="ScreenEaseDiagnostics"
                             AutomationProperties.Name="{Binding DiagnosticsTitle}"
-                            Command="{Binding ToggleDiagnosticsCommand}">
+                            Command="{Binding ToggleDiagnosticsCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.toggle-diagnostics">
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource MptSpacingS}">
             <Border Width="22"
                     Height="22"
