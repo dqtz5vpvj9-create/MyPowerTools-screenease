@@ -113,7 +113,7 @@ public sealed class ScreenEaseSurfaceFactory : IMptAvaloniaSurfaceFactory
                 Info(context, $"Imported ScreenEase settings from '{Path.GetFileName(path)}'.");
                 return imported;
             },
-            openHotkeySettings: () => context.NavigateAsync("", "", null));
+            openHotkeySettings: () => context.OpenShortcutSettingsAsync?.Invoke(context.ToolId) ?? context.NavigateAsync("", "", null));
 
         // Fold the ScreenEase.Service unit status (if a ServiceManager is supervising it) into the
         // existing diagnostics/title area. Falls back gracefully to null when no ServiceManager runs.

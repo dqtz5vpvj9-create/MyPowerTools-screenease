@@ -9,12 +9,187 @@
   "type": "dotnet-surface",
   "primaryRouteId": "profiles",
   "routes": [
-    { "routeId": "profiles", "surfaceId": "screenease.profiles", "title": "Eye care", "icon": "route.profiles", "surface": { "kind": "dotnet", "assembly": "surface/ScreenEase.Surface.dll", "type": "ScreenEase.Surface.ScreenEaseSurfaceFactory" } }
+    {
+      "routeId": "profiles",
+      "surfaceId": "screenease.profiles",
+      "title": "Eye care",
+      "icon": "route.profiles",
+      "surface": {
+        "kind": "dotnet",
+        "assembly": "surface/ScreenEase.Surface.dll",
+        "type": "ScreenEase.Surface.ScreenEaseSurfaceFactory"
+      }
+    }
   ],
   "homeCard": {
     "summary": "Tune color temperature and brightness, save modes, and run rest reminders.",
     "primaryActionLabel": "Open ScreenEase",
     "statusBinding": "module.status",
     "order": 50
-  }
+  },
+  "shortcuts": [
+    {
+      "id": "screenease.ui.refresh",
+      "title": "Refresh",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": [
+        {
+          "gesture": "F5",
+          "platform": "all"
+        }
+      ]
+    },
+    {
+      "id": "screenease.ui.toggle-eye-care",
+      "title": "Toggle Eye Care",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.save-mode",
+      "title": "Save Mode",
+      "context": "",
+      "allowInTextInput": true,
+      "bindings": [
+        {
+          "gesture": "Ctrl+S",
+          "platform": "windows"
+        },
+        {
+          "gesture": "Ctrl+S",
+          "platform": "linux"
+        },
+        {
+          "gesture": "Cmd+S",
+          "platform": "macos"
+        }
+      ]
+    },
+    {
+      "id": "screenease.ui.reset-mode-draft",
+      "title": "Reset Mode Draft",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": [
+        {
+          "gesture": "Ctrl+Z",
+          "platform": "windows"
+        },
+        {
+          "gesture": "Ctrl+Z",
+          "platform": "linux"
+        },
+        {
+          "gesture": "Cmd+Z",
+          "platform": "macos"
+        }
+      ]
+    },
+    {
+      "id": "screenease.ui.new-mode",
+      "title": "New Mode",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.apply-current",
+      "title": "Apply Current",
+      "context": "",
+      "allowInTextInput": true,
+      "bindings": [
+        {
+          "gesture": "Ctrl+Enter",
+          "platform": "windows"
+        },
+        {
+          "gesture": "Ctrl+Enter",
+          "platform": "linux"
+        },
+        {
+          "gesture": "Cmd+Enter",
+          "platform": "macos"
+        }
+      ]
+    },
+    {
+      "id": "screenease.ui.save-reminder",
+      "title": "Save Reminder",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.save-schedule",
+      "title": "Save Schedule",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.start-reminder",
+      "title": "Start Reminder",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.pause-reminder",
+      "title": "Pause Reminder",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.resume-reminder",
+      "title": "Resume Reminder",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.reset-reminder",
+      "title": "Reset Reminder",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.toggle-diagnostics",
+      "title": "Toggle Diagnostics",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.save-advanced",
+      "title": "Save Advanced",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.save-overlay",
+      "title": "Save Overlay",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.import-legacy",
+      "title": "Import Legacy",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    },
+    {
+      "id": "screenease.ui.open-hotkey-settings",
+      "title": "Open Hotkey Settings",
+      "context": "",
+      "allowInTextInput": false,
+      "bindings": []
+    }
+  ]
 }
