@@ -116,27 +116,54 @@ static async Task ServePipeAsync(
     SettingsRevisionStore settingsRevision,
     CancellationToken cancellationToken)
 {
-    while (!cancellationToken.IsCancellationRequested)
+    // Keep accepting while existing clients are served. On Unix, disposing the
+    // last server instance also drops queued connections from concurrent page reads.
+    using var commandGate = new SemaphoreSlim(1, 1);
+    var clients = new List<Task>();
+    var listener = MptNamedPipePolicy.CreateServer(name);
+    try
     {
-        await using var server = MptNamedPipePolicy.CreateServer(name);
-        try
+        while (!cancellationToken.IsCancellationRequested)
         {
-            await server.WaitForConnectionAsync(cancellationToken);
-            while (server.IsConnected && !cancellationToken.IsCancellationRequested)
+            await listener.WaitForConnectionAsync(cancellationToken);
+            var connected = listener;
+            // Establish the replacement before the connected instance can close.
+            listener = MptNamedPipePolicy.CreateServer(name);
+            clients.RemoveAll(task => task.IsCompleted);
+            clients.Add(ServeClientAsync(connected));
+        }
+    }
+    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+    finally
+    {
+        await listener.DisposeAsync();
+        await Task.WhenAll(clients);
+    }
+
+    async Task ServeClientAsync(System.IO.Pipes.NamedPipeServerStream server)
+    {
+        await using (server)
+        {
+            try
             {
-                using var request = await ReadFramedMessageAsync(server, cancellationToken);
-                if (request is null) break;
-                var response = await HandleRequestAsync(module, settingsRevision, request.RootElement, cancellationToken);
-                await WriteFramedMessageAsync(server, response, cancellationToken);
+                while (server.IsConnected && !cancellationToken.IsCancellationRequested)
+                {
+                    using var request = await ReadFramedMessageAsync(server, cancellationToken);
+                    if (request is null) break;
+                    await commandGate.WaitAsync(cancellationToken);
+                    try
+                    {
+                        var response = await HandleRequestAsync(module, settingsRevision, request.RootElement, cancellationToken);
+                        await WriteFramedMessageAsync(server, response, cancellationToken);
+                    }
+                    finally { commandGate.Release(); }
+                }
             }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            break;
-        }
-        catch (Exception exception)
-        {
-            Console.Error.WriteLine($"ScreenEase.Service pipe error: {exception.Message}");
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine($"ScreenEase.Service pipe error: {exception.Message}");
+            }
         }
     }
 }
