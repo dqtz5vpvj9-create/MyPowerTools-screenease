@@ -1,17 +1,58 @@
 using Avalonia;
 using Avalonia.Controls;
 using MyPowerTools.UI;
+using ScreenEase.Surface.ViewModels;
 
 namespace ScreenEase.Surface.Views;
 
 public partial class ScreenEaseView : UserControl
 {
+    private bool _reminderPresetsAdded;
+
     public ScreenEaseView()
     {
         InitializeComponent();
         SizeChanged += (_, eventArgs) => UpdateResponsiveLayout(eventArgs.NewSize.Width);
         DetachedFromVisualTree += (_, _) => (DataContext as IDisposable)?.Dispose();
-        Loaded += (_, _) => UpdateResponsiveLayout(Bounds.Width);
+        Loaded += (_, _) => { AddReminderPresetButtons(); UpdateResponsiveLayout(Bounds.Width); };
+    }
+
+    private void AddReminderPresetButtons()
+    {
+        if (_reminderPresetsAdded || ReminderCard.Child is not StackPanel reminderContent)
+        {
+            return;
+        }
+
+        var presetSection = new StackPanel { Spacing = 6 };
+        presetSection.Children.Add(new TextBlock
+        {
+            Text = "快捷方案"
+        });
+
+        var buttons = new WrapPanel();
+        foreach (var preset in ScreenEaseReminderPreset.BuiltIns)
+        {
+            var button = new Button
+            {
+                Content = preset.Name,
+                Margin = new Thickness(0, 0, 8, 8)
+            };
+            button.Classes.Add("ScreenEaseSecondary");
+            ToolTip.SetTip(button, "填写这一组时长并立即保存提醒设置");
+            button.Click += async (_, _) =>
+            {
+                if (DataContext is ScreenEaseViewModel viewModel)
+                {
+                    await viewModel.ApplyReminderPresetAsync(preset);
+                }
+            };
+            buttons.Children.Add(button);
+        }
+
+        presetSection.Children.Add(buttons);
+        reminderContent.Children.Insert(Math.Min(1, reminderContent.Children.Count), presetSection);
+        _reminderPresetsAdded = true;
     }
 
     private void UpdateResponsiveLayout(double width)
