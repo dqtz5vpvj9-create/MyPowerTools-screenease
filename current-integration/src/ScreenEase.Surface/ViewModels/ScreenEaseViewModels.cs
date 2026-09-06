@@ -215,6 +215,13 @@ public sealed partial class ScreenEaseViewModel : MyPowerTools.AvaloniaSdk.ToolS
     public ICommand ImportLegacyCommand { get; }
     public ICommand OpenHotkeySettingsCommand { get; }
 
+    public void SuspendView() => _timer.Stop();
+
+    public void ResumeView()
+    {
+        if (Volatile.Read(ref _disposed) == 0) _timer.Start();
+    }
+
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) == 0)

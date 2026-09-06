@@ -80,7 +80,9 @@ try
             }
         }
 
-        await Task.Delay(intervalMs, cts.Token);
+        // macOS readiness/liveness uses the control pipe. A repeating heartbeat
+        // does no useful work and wakes an otherwise completely idle service.
+        await Task.Delay(OperatingSystem.IsMacOS() ? Timeout.Infinite : intervalMs, cts.Token);
     }
 }
 catch (OperationCanceledException) when (cts.IsCancellationRequested)

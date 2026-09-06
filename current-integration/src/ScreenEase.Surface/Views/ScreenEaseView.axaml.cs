@@ -13,7 +13,14 @@ public partial class ScreenEaseView : UserControl
     {
         InitializeComponent();
         SizeChanged += (_, eventArgs) => UpdateResponsiveLayout(eventArgs.NewSize.Width);
-        DetachedFromVisualTree += (_, _) => (DataContext as IDisposable)?.Dispose();
+        AttachedToVisualTree += (_, _) => (DataContext as ScreenEaseViewModel)?.ResumeView();
+        DetachedFromVisualTree += (_, args) =>
+        {
+            if (OperatingSystem.IsMacOS() && args.RootVisual is Window window &&
+                (!window.IsVisible || window.WindowState == WindowState.Minimized))
+                (DataContext as ScreenEaseViewModel)?.SuspendView();
+            else (DataContext as IDisposable)?.Dispose();
+        };
         Loaded += (_, _) => { AddReminderPresetButtons(); UpdateResponsiveLayout(Bounds.Width); };
     }
 

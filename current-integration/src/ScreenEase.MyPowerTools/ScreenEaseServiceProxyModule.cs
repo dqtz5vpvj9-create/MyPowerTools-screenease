@@ -34,8 +34,19 @@ public sealed class ScreenEaseServiceProxyModule : IMptModule
         _service = new ScreenEaseServicePipeClient(units);
         try
         {
-            var settings = await _service.GetSettingsAsync(cancellationToken);
-            await SyncHotkeysAsync(settings.Values, cancellationToken);
+            if (OperatingSystem.IsMacOS())
+            {
+                var persisted = LoadPersistedState();
+                await SyncHotkeysAsync(persisted.ToSettingsSnapshot(Id).Values, cancellationToken);
+                // Restore only tasks the user actually enabled. Catalog discovery is passive.
+                if (persisted.GetEffect().Enabled || persisted.GetOverlay().Enabled || persisted.GetReminder().Enabled)
+                    await _service.GetSettingsAsync(cancellationToken);
+            }
+            else
+            {
+                var settings = await _service.GetSettingsAsync(cancellationToken);
+                await SyncHotkeysAsync(settings.Values, cancellationToken);
+            }
         }
         catch
         {
@@ -79,8 +90,9 @@ public sealed class ScreenEaseServiceProxyModule : IMptModule
         EventCursor cursor,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        await Task.CompletedTask;
-        cancellationToken.ThrowIfCancellationRequested();
+        // A completed stream makes Runner reconnect every second. This proxy has no
+        // unsolicited events; sleep until the module is disabled instead.
+        await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
         yield break;
     }
 
@@ -89,6 +101,11 @@ public sealed class ScreenEaseServiceProxyModule : IMptModule
 
     public async ValueTask<SettingsSnapshotDocument> GetSettingsAsync(CancellationToken cancellationToken)
     {
+        if (OperatingSystem.IsMacOS())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return LoadPersistedState().ToSettingsSnapshot(Id);
+        }
         try
         {
             return await Service.GetSettingsAsync(cancellationToken);
@@ -122,6 +139,20 @@ public sealed class ScreenEaseServiceProxyModule : IMptModule
         _service = null;
         _context = null;
         return ValueTask.CompletedTask;
+    }
+
+    private static ScreenEaseState LoadPersistedState()
+    {
+        var configured = Environment.GetEnvironmentVariable("MPT_TOOL_DATA_ROOT");
+        var root = string.IsNullOrWhiteSpace(configured)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MyPowerTools", "state", "tools", "screenease")
+            : configured;
+        // Read only: initializing the catalog must not create or rewrite tool state.
+        var path = Path.Combine(root, "screenease-state.json");
+        return File.Exists(path)
+            ? JsonSerializer.Deserialize<ScreenEaseState>(File.ReadAllText(path)) ?? ScreenEaseState.Default()
+            : ScreenEaseState.Default();
     }
 
     private ScreenEaseServicePipeClient Service =>
@@ -176,7 +207,15 @@ internal sealed class ScreenEaseServicePipeClient
 
     public async Task<ModuleStatusSnapshot> GetModuleStatusAsync(CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(new { command = "moduleStatus" }, cancellationToken);
+        if (OperatingSystem.IsMacOS())
+        {
+            var units = await _units.ListAsync(cancellationToken);
+            if (units.FirstOrDefault(unit => unit.Id == UnitId)?.State == ServiceUnitState.Inactive)
+                return new ModuleStatusSnapshot("screenease", "running",
+                    "ScreenEase is ready and starts when opened or used.", DateTimeOffset.UtcNow, [], 0);
+        }
+        using var response = await SendAsync(new { command = "moduleStatus" }, cancellationToken,
+            startIfNeeded: !OperatingSystem.IsMacOS());
         return JsonSerializer.Deserialize<ModuleStatusSnapshot>(
                    response.RootElement.GetProperty("data").GetRawText(),
                    JsonOptions)
@@ -220,9 +259,9 @@ internal sealed class ScreenEaseServicePipeClient
         return ParseSettings(response.RootElement.GetProperty("data"));
     }
 
-    private async Task<JsonDocument> SendAsync(object request, CancellationToken cancellationToken)
+    private async Task<JsonDocument> SendAsync(object request, CancellationToken cancellationToken, bool startIfNeeded = true)
     {
-        var unit = await EnsureRunningAsync(cancellationToken);
+        var unit = await EnsureRunningAsync(cancellationToken, startIfNeeded);
         var address = unit.Readiness?.Address;
         var pipeName = string.Equals(unit.Readiness?.Kind, "pipe", StringComparison.OrdinalIgnoreCase) &&
                        !string.IsNullOrWhiteSpace(address)
@@ -264,7 +303,7 @@ internal sealed class ScreenEaseServicePipeClient
         return response;
     }
 
-    private async Task<ServiceUnitSnapshot> EnsureRunningAsync(CancellationToken cancellationToken)
+    private async Task<ServiceUnitSnapshot> EnsureRunningAsync(CancellationToken cancellationToken, bool startIfNeeded)
     {
         var units = await _units.ListAsync(cancellationToken);
         var unit = units.FirstOrDefault(item => string.Equals(item.Id, UnitId, StringComparison.OrdinalIgnoreCase));
@@ -275,7 +314,7 @@ internal sealed class ScreenEaseServicePipeClient
             unit = units.FirstOrDefault(item => string.Equals(item.Id, UnitId, StringComparison.OrdinalIgnoreCase));
         }
         if (unit is null) throw new InvalidOperationException($"Service Unit '{UnitId}' is unavailable.");
-        if (unit.State is not ServiceUnitState.Active and not ServiceUnitState.Degraded)
+        if (startIfNeeded && unit.State is not ServiceUnitState.Active and not ServiceUnitState.Degraded)
         {
             unit = await _units.StartAsync(UnitId, cancellationToken);
         }
