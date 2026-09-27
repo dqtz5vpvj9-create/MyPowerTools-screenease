@@ -1,3 +1,5 @@
+using Avalonia.Threading;
+using Avalonia.Controls.Primitives;
 using Avalonia;
 using Avalonia.Controls;
 using MyPowerTools.UI;
@@ -8,11 +10,12 @@ namespace ScreenEase.Surface.Views;
 public partial class ScreenEaseView : UserControl
 {
     private bool _reminderPresetsAdded;
+    private bool _responsiveLayoutPending;
 
     public ScreenEaseView()
     {
         InitializeComponent();
-        SizeChanged += (_, eventArgs) => UpdateResponsiveLayout(eventArgs.NewSize.Width);
+        SizeChanged += (_, _) => ScheduleResponsiveLayout();
         AttachedToVisualTree += (_, _) => (DataContext as ScreenEaseViewModel)?.ResumeView();
         DetachedFromVisualTree += (_, args) =>
         {
@@ -21,7 +24,18 @@ public partial class ScreenEaseView : UserControl
                 (DataContext as ScreenEaseViewModel)?.SuspendView();
             else (DataContext as IDisposable)?.Dispose();
         };
-        Loaded += (_, _) => { AddReminderPresetButtons(); UpdateResponsiveLayout(Bounds.Width); };
+        Loaded += (_, _) => { AddReminderPresetButtons(); ScheduleResponsiveLayout(); };
+    }
+
+    private void ScheduleResponsiveLayout()
+    {
+        if (_responsiveLayoutPending) return;
+        _responsiveLayoutPending = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _responsiveLayoutPending = false;
+            UpdateResponsiveLayout(Bounds.Width);
+        }, DispatcherPriority.Background);
     }
 
     private void AddReminderPresetButtons()
@@ -62,64 +76,70 @@ public partial class ScreenEaseView : UserControl
         _reminderPresetsAdded = true;
     }
 
+    private double _lastResponsiveWidth = double.NaN;
+
+    /// <summary>
+    /// Switches between the desktop split and the stacked phone layout. Only the width/height of the
+    /// declared definitions and the grid positions change here: replacing Grid.ColumnDefinitions or
+    /// Grid.RowDefinitions leaves the Grid's cached cell ranges pointing into the old collection, and
+    /// the next measure pass throws ArgumentOutOfRangeException out of Grid.MeasureCell.
+    /// </summary>
     private void UpdateResponsiveLayout(double width)
     {
-        if (width <= 0)
-        {
-            return;
-        }
-
+        if (width <= 0 || width == _lastResponsiveWidth) return;
+        _lastResponsiveWidth = width;
         var narrow = width < 760;
         var compact = width < 1080;
-        MainLayout.ColumnDefinitions.Clear();
-        MainLayout.RowDefinitions.Clear();
+
         if (narrow)
         {
-            MainLayout.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            MainLayout.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            MainLayout.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            ModeSidebar.Height = 320;
+            // Sidebar above the content, both full width.
+            MainLayout.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+            MainLayout.ColumnDefinitions[1].Width = new GridLength(0);
+            MainLayout.RowDefinitions[0].Height = GridLength.Auto;
+            MainLayout.RowDefinitions[1].Height = GridLength.Auto;
             ModeSidebar.BorderThickness = MptThemeTokens.BottomBorderThickness;
-            ContentPanel.Margin = MptThemeTokens.CompactPageMargin;
+            ModeSidebar.Margin = MptThemeTokens.CompactPageMargin;
+            ModeSidebar.MaxHeight = 320;
             Grid.SetColumn(ModeSidebar, 0);
             Grid.SetRow(ModeSidebar, 0);
-            Grid.SetColumn(ContentPanel, 0);
-            Grid.SetRow(ContentPanel, 1);
+            Grid.SetColumn(ContentScroller, 0);
+            Grid.SetRow(ContentScroller, 1);
         }
         else
         {
-            MainLayout.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(compact ? 196 : width >= 1280 ? 248 : 228)));
-            MainLayout.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            MainLayout.RowDefinitions.Add(new RowDefinition(GridLength.Star));
-            ModeSidebar.Height = double.NaN;
+            var sidebarWidth = compact ? 196 : width >= 1280 ? 248 : 228;
+            MainLayout.ColumnDefinitions[0].Width = new GridLength(sidebarWidth);
+            MainLayout.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+            MainLayout.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
+            MainLayout.RowDefinitions[1].Height = new GridLength(0);
             ModeSidebar.BorderThickness = MptThemeTokens.RightBorderThickness;
-            ContentPanel.Margin = MptThemeTokens.PageMargin;
+            ModeSidebar.Margin = default;
+            ModeSidebar.MaxHeight = double.PositiveInfinity;
             Grid.SetColumn(ModeSidebar, 0);
             Grid.SetRow(ModeSidebar, 0);
-            Grid.SetColumn(ContentPanel, 1);
-            Grid.SetRow(ContentPanel, 0);
+            Grid.SetColumn(ContentScroller, 1);
+            Grid.SetRow(ContentScroller, 0);
         }
 
-        WorkspaceGrid.ColumnDefinitions.Clear();
-        WorkspaceGrid.RowDefinitions.Clear();
         if (compact)
         {
-            WorkspaceGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            WorkspaceGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            WorkspaceGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            // One card per row: the second column collapses instead of being removed.
+            WorkspaceGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+            WorkspaceGrid.ColumnDefinitions[1].Width = new GridLength(0);
             Grid.SetColumn(EyeCareCard, 0);
             Grid.SetRow(EyeCareCard, 0);
             Grid.SetColumn(ReminderCard, 0);
             Grid.SetRow(ReminderCard, 1);
-            return;
         }
-
-        WorkspaceGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-        WorkspaceGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-        WorkspaceGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-        Grid.SetColumn(EyeCareCard, 0);
-        Grid.SetRow(EyeCareCard, 0);
-        Grid.SetColumn(ReminderCard, 1);
-        Grid.SetRow(ReminderCard, 0);
+        else
+        {
+            WorkspaceGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+            WorkspaceGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+            Grid.SetColumn(EyeCareCard, 0);
+            Grid.SetRow(EyeCareCard, 0);
+            Grid.SetColumn(ReminderCard, 1);
+            Grid.SetRow(ReminderCard, 0);
+        }
     }
 }

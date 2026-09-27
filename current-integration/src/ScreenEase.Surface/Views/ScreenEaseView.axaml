@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:shortcuts="using:MyPowerTools.AvaloniaSdk"
+             xmlns:adaptive="using:MyPowerTools.AvaloniaSdk"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:primitives="using:Avalonia.Controls.Primitives"
              xmlns:controls="using:MyPowerTools.UI.Controls"
@@ -165,10 +166,10 @@
             BorderBrush="{DynamicResource MptBrushBorder}"
             BorderThickness="0,0,0,1"
             Padding="{DynamicResource MptHorizontal2XlPadding}">
-      <Grid ColumnDefinitions="*,Auto"
+      <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,Auto"
             MaxWidth="1680"
             HorizontalAlignment="Stretch">
-        <StackPanel Orientation="Horizontal"
+        <StackPanel adaptive:MptAdaptiveLayout.StackBelow="480" Orientation="Horizontal"
                     Spacing="{DynamicResource MptSpacingM}"
                     VerticalAlignment="Center">
           <TextBlock Text="ScreenEase"
@@ -195,11 +196,18 @@
       </Grid>
     </Border>
 
+    <!-- Both breakpoint shapes are declared here: the responsive code only changes Width/Height and
+         grid positions. Replacing the definition collections at runtime leaves Grid cell ranges
+         pointing into the old collection and throws in the next measure pass. -->
     <Grid x:Name="MainLayout" Grid.Row="1">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="280" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" />
+        <RowDefinition Height="0" />
+      </Grid.RowDefinitions>
 
       <Border x:Name="ModeSidebar"
               Background="{DynamicResource MptBrushNavigationBackground}"
@@ -261,7 +269,8 @@
         </Grid>
       </Border>
 
-      <ScrollViewer Grid.Column="1"
+      <ScrollViewer x:Name="ContentScroller"
+                    Grid.Column="1"
                     VerticalScrollBarVisibility="Auto"
                     HorizontalScrollBarVisibility="Disabled">
       <StackPanel x:Name="ContentPanel"
@@ -273,7 +282,7 @@
                 Padding="{DynamicResource MptSettingsRowPadding}"
                 CornerRadius="{DynamicResource MptRadiusLarge}"
                 Background="{DynamicResource MptBrushScreenEaseAccent}">
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,Auto">
             <StackPanel Spacing="{DynamicResource MptSpacingXs}"
                         VerticalAlignment="Center">
               <TextBlock Text="{Binding ModeName}"
@@ -293,17 +302,25 @@
           </Grid>
         </Border>
 
-        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource MptSpacingS}"
+        <StackPanel adaptive:MptAdaptiveLayout.StackBelow="480" Orientation="Horizontal" Spacing="{DynamicResource MptSpacingS}"
                     IsVisible="{Binding HasUnsavedModeChanges}">
           <TextBlock Classes="MptMeta" Text="{Binding ModeDraftStatus}" VerticalAlignment="Center" TextWrapping="Wrap" />
           <controls:MptButton Content="撤销本模式修改" Command="{Binding ResetModeDraftCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.reset-mode-draft" />
         </StackPanel>
 
+        <!-- Two declared slots; the right slot collapses to width 0 on the compact breakpoint instead
+             of the definition collection being rebuilt. -->
         <Grid x:Name="WorkspaceGrid"
-              ColumnDefinitions="*,*"
-              RowDefinitions="Auto"
               ColumnSpacing="14"
               RowSpacing="14">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
           <Border x:Name="EyeCareCard"
                   Classes="ScreenEaseCard"
                   MinHeight="575"
@@ -314,7 +331,7 @@
                          LineHeight="34"
                          FontWeight="Bold" />
 
-              <Grid RowDefinitions="Auto,Auto"
+              <Grid adaptive:MptAdaptiveLayout.StackBelow="600" RowDefinitions="Auto,Auto"
                     ColumnDefinitions="70,*,76"
                     RowSpacing="10"
                     ColumnSpacing="10">
@@ -361,7 +378,7 @@
                         CornerRadius="{DynamicResource MptRadiusCard}"
                         Background="{DynamicResource MptBrushSurfaceInset}">
                   <StackPanel Spacing="{DynamicResource MptSpacingS}">
-                  <StackPanel Orientation="Horizontal"
+                  <StackPanel adaptive:MptAdaptiveLayout.StackBelow="480" Orientation="Horizontal"
                               Spacing="{DynamicResource MptSpacingL}">
                     <controls:MptCheckBox Content="启用夜间值"
                                           IsChecked="{Binding UseNightValues, Mode=TwoWay}" />
@@ -371,7 +388,7 @@
                     <controls:MptCheckBox Content="按时间自动切换"
                                           IsChecked="{Binding UseSchedule, Mode=TwoWay}" />
                   </StackPanel>
-                  <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
+                  <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
                     <StackPanel Spacing="{DynamicResource MptSpacingXs}">
                       <TextBlock Text="日出"
                                  FontSize="{DynamicResource MptFontSizeMeta}"
@@ -408,7 +425,7 @@
                 <TextBlock Text="模式名称"
                            FontSize="{DynamicResource MptFontSizeMeta}"
                            Foreground="{DynamicResource MptBrushTextSecondary}" />
-                <Grid ColumnDefinitions="*,Auto,Auto"
+                <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,Auto,Auto"
                       ColumnSpacing="8">
                   <controls:MptTextBox Classes="ScreenEaseInput"
                                        AutomationProperties.Name="模式名称"
@@ -447,7 +464,7 @@
                          LineHeight="34"
                          FontWeight="Bold" />
 
-              <Grid ColumnDefinitions="*,*,*"
+              <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,*,*"
                     ColumnSpacing="12">
                 <StackPanel Spacing="{DynamicResource MptSpacingXs}">
                   <TextBlock Text="状态"
@@ -503,7 +520,7 @@
               <Border Height="1"
                       Background="{DynamicResource MptBrushDivider}" />
 
-              <Grid ColumnDefinitions="*,*"
+              <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,*"
                     ColumnSpacing="14">
                 <controls:MptCheckBox Content="启用提醒"
                                       IsChecked="{Binding ReminderEnabled, Mode=TwoWay}" />
@@ -512,7 +529,7 @@
                                       IsChecked="{Binding AutoStartNext, Mode=TwoWay}" />
               </Grid>
 
-              <Grid RowDefinitions="Auto,Auto"
+              <Grid adaptive:MptAdaptiveLayout.StackBelow="600" RowDefinitions="Auto,Auto"
                     ColumnDefinitions="*,*"
                     RowSpacing="9"
                     ColumnSpacing="12">
@@ -571,7 +588,7 @@
                   IsExpanded="False">
           <Border Classes="ScreenEaseCard"
                   Margin="{DynamicResource MptGapTopS}">
-            <Grid ColumnDefinitions="*,*"
+            <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,*"
                   RowDefinitions="Auto,Auto"
                   ColumnSpacing="{DynamicResource MptSpacingL}"
                   RowSpacing="{DynamicResource MptSpacingL}">
@@ -587,7 +604,7 @@
                   </StackPanel>
                   <controls:MptCheckBox Content="启用平滑过渡"
                                         IsChecked="{Binding SmoothTransitions, Mode=TwoWay}" />
-                  <Grid ColumnDefinitions="*,Auto"
+                  <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,Auto"
                         ColumnSpacing="{DynamicResource MptSpacingS}">
                     <StackPanel Spacing="{DynamicResource MptSpacingXs}">
                       <TextBlock Text="过渡时长（毫秒）"
@@ -622,7 +639,7 @@
                                Foreground="{DynamicResource MptBrushTextSecondary}"
                                TextWrapping="Wrap" />
                   </StackPanel>
-                  <Grid ColumnDefinitions="*,*"
+                  <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,*"
                         ColumnSpacing="{DynamicResource MptSpacingM}">
                     <StackPanel Spacing="{DynamicResource MptSpacingXs}">
                       <TextBlock Text="运行状态"
@@ -642,7 +659,7 @@
                   </Grid>
                   <controls:MptCheckBox Content="启用柔光遮罩"
                                         IsChecked="{Binding OverlayEnabled, Mode=TwoWay}" />
-                  <Grid ColumnDefinitions="*,*"
+                  <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,*"
                         ColumnSpacing="{DynamicResource MptSpacingS}">
                     <StackPanel Spacing="{DynamicResource MptSpacingXs}">
                       <TextBlock Text="不透明度（0–95）"
@@ -689,7 +706,7 @@
                                Foreground="{DynamicResource MptBrushTextSecondary}"
                                TextWrapping="Wrap" />
                   </StackPanel>
-                  <Grid ColumnDefinitions="*,Auto"
+                  <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,Auto"
                         ColumnSpacing="{DynamicResource MptSpacingS}">
                     <controls:MptTextBox Classes="ScreenEaseInput"
                                          AutomationProperties.Name="CareUEyes INI 文件路径"
@@ -716,7 +733,7 @@
                       Grid.Column="1"
                       Classes="MptInset">
                 <StackPanel Spacing="{DynamicResource MptSpacingM}">
-                  <Grid ColumnDefinitions="*,Auto"
+                  <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,Auto"
                         ColumnSpacing="{DynamicResource MptSpacingM}">
                     <StackPanel Spacing="{DynamicResource MptSpacingXs}">
                       <TextBlock Text="快捷键"
@@ -737,7 +754,7 @@
                   <ItemsControl ItemsSource="{Binding Hotkeys}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="services:ScreenEaseHotkey">
-                        <Grid ColumnDefinitions="*,Auto,Auto"
+                        <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,Auto,Auto"
                               ColumnSpacing="{DynamicResource MptSpacingS}"
                               Margin="{DynamicResource MptGapBottomXs}">
                           <TextBlock Text="{Binding Title}"
@@ -761,7 +778,7 @@
         <controls:MptButton Classes="ScreenEaseDiagnostics"
                             AutomationProperties.Name="{Binding DiagnosticsTitle}"
                             Command="{Binding ToggleDiagnosticsCommand}" shortcuts:MptShortcutHint.CommandId="screenease.ui.toggle-diagnostics">
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource MptSpacingS}">
+          <StackPanel adaptive:MptAdaptiveLayout.StackBelow="480" Orientation="Horizontal" Spacing="{DynamicResource MptSpacingS}">
             <Border Width="22"
                     Height="22"
                     CornerRadius="{DynamicResource MptRadiusBadge}"
@@ -787,7 +804,7 @@
 
         <Border Classes="ScreenEaseCard"
                 IsVisible="{Binding DiagnosticsExpanded}">
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+          <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,*" ColumnSpacing="16">
             <StackPanel Spacing="{DynamicResource MptSpacingXs}">
               <TextBlock Text="显示器硬件调节"
                          FontWeight="SemiBold" />
@@ -817,7 +834,7 @@
                     <Border Classes="MptInset"
                             Margin="{DynamicResource MptGapBottomS}">
                       <StackPanel Spacing="{DynamicResource MptSpacingXs}">
-                        <Grid ColumnDefinitions="*,Auto"
+                        <Grid adaptive:MptAdaptiveLayout.StackBelow="600" ColumnDefinitions="*,Auto"
                               ColumnSpacing="{DynamicResource MptSpacingS}">
                           <TextBlock Text="{Binding Name}"
                                      FontWeight="SemiBold"
