@@ -46,12 +46,9 @@ public sealed partial class ScreenEaseViewModel
 
         await RunTimerActionAsync(async () =>
         {
-            if (!reminder.Enabled)
-            {
-                ReminderEnabled = true;
-                reminder = reminder with { Enabled = true };
-                await _saveReminder(reminder).ConfigureAwait(true);
-            }
+            reminder = reminder with { Enabled = true };
+            await _saveReminder(reminder).ConfigureAwait(true);
+            ReminderEnabled = true;
             return await _startReminder().ConfigureAwait(true);
         }, "本轮专注已开始。").ConfigureAwait(true);
     }
