@@ -5,15 +5,8 @@
   "sourceNote": "ScreenEase is already an independent Git repository; unrelated untracked benchmark documents are excluded.",
   "capturedAtUtc": "2026-07-11T16:45:10.9672473+00:00",
   "originalSource": {
-    "sourceRoot": "C:\\Users\\lixinrui\\Documents\\Codex\\2026-07-01\\careueyes-ida-pro-core-service\\outputs\\ScreenEase",
-    "gitTopLevel": "C:/Users/lixinrui/Documents/Codex/2026-07-01/careueyes-ida-pro-core-service/outputs/ScreenEase",
     "commit": "ec999534983cd832a51bd2d7ad5ccc865e3fd08b",
-    "branch": "main",
-    "dirty": true,
-    "status": [
-      "?? CompSwapBench-readable.md",
-      "?? CompressSwapBenchSurvey-readable.md"
-    ]
+    "branch": "main"
   },
   "originalSnapshotPath": "original-source",
   "selectedEntries": [
@@ -31,5 +24,15 @@
   "currentIntegrationMatchedFileCount": 28,
   "currentIntegrationCopiedFileCount": 28,
   "currentIntegrationUnmatchedGlobs": [],
-  "currentIntegrationMissingFiles": []
+  "currentIntegrationMissingFiles": [],
+  "integrationCaptureMetadataNote": "currentIntegrationGlobs and capture counts describe the original capture, not the current file inventory. Subsequent retired snapshot paths are recorded in archivedIntegrationSnapshots.",
+  "archivedIntegrationSnapshots": [
+    {
+      "path": "current-integration/src/MyPowerTools.Shell.Avalonia",
+      "recoveryCommit": "20469c27705d76f0b36fbc0d4e45902998b284bc",
+      "fileCount": 10,
+      "physicalLines": 3442,
+      "recoveryDocument": "current-integration/ARCHIVED-SNAPSHOTS.md"
+    }
+  ]
 }

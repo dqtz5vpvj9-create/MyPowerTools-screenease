@@ -43,6 +43,12 @@ adapter binary is injected.
 ## Repository URL
 
 The current development submodule URL is
-`file:///C:/Users/lixinrui/repo/MyPowerTools.ToolRepos/screenease`. Replace the
+`https://github.com/dqtz5vpvj9-create/MyPowerTools-screenease`. Replace the
 entry in the superproject `.gitmodules` file after publishing this repository to
 its permanent remote.
+
+## Historical integration snapshots
+
+The superseded Shell UI snapshots now live in Git history rather than the current source tree.
+See [the exact file inventory and recovery commands](current-integration/ARCHIVED-SNAPSHOTS.md).
+Original product source and active build/package inputs remain in place.

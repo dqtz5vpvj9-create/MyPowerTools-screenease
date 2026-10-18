@@ -611,8 +611,8 @@ public sealed class ScreenEaseModule : IMptModule
     private async Task<CommandExecutionResult> PlanProfileAsync(CommandRequest request, CancellationToken cancellationToken)
     {
         var state = Store.Load();
-        var profileId = ReadString(request.Args, "profileId") ?? state.ActiveProfileId;
-        var displayId = ReadString(request.Args, "displayId") ?? "all";
+        var profileId = SettingsJson.ReadString(request.Args, "profileId") ?? state.ActiveProfileId;
+        var displayId = SettingsJson.ReadString(request.Args, "displayId") ?? "all";
         var profile = state.FindProfile(profileId);
         if (profile is null)
         {
@@ -639,7 +639,7 @@ public sealed class ScreenEaseModule : IMptModule
         CancellationToken cancellationToken)
     {
         var state = Store.Load();
-        var requestedProfileId = ReadString(request.Args, "profileId");
+        var requestedProfileId = SettingsJson.ReadString(request.Args, "profileId");
         var requestedTemperature = allowManualValues ? ReadInt(request.Args, "colorTemperatureKelvin") : null;
         var requestedBrightness = allowManualValues ? ReadInt(request.Args, "brightnessPercent") : null;
         var profileId = requestedProfileId ?? state.ActiveProfileId;
@@ -675,8 +675,8 @@ public sealed class ScreenEaseModule : IMptModule
 
         var displays = await Display.ListDisplaysAsync(cancellationToken);
         var writer = await Display.GetWriterStatusAsync(cancellationToken);
-        var hardwareWrite = ReadBool(request.Args, "hardwareWrite") ?? writer.Available;
-        var displayId = ReadString(request.Args, "displayId") ?? "all";
+        var hardwareWrite = SettingsJson.ReadBool(request.Args, "hardwareWrite") ?? writer.Available;
+        var displayId = SettingsJson.ReadString(request.Args, "displayId") ?? "all";
         var resolvedValues = profile.ResolveValues(state.GetSchedule(), DateTimeOffset.Now);
         var values = hasManualValues
             ? new ScreenEaseProfileValues(
@@ -839,9 +839,9 @@ public sealed class ScreenEaseModule : IMptModule
         var state = Store.Load();
         var current = state.GetOverlay();
         var overlay = ScreenEaseOverlaySettings.Normalize(new ScreenEaseOverlaySettings(
-            ReadBool(request.Args, "enabled") ?? current.Enabled,
+            SettingsJson.ReadBool(request.Args, "enabled") ?? current.Enabled,
             ReadInt(request.Args, "opacityPercent") ?? current.OpacityPercent,
-            ReadString(request.Args, "colorHex") ?? current.ColorHex));
+            SettingsJson.ReadString(request.Args, "colorHex") ?? current.ColorHex));
         state = state with { Overlay = overlay, UpdatedAt = DateTimeOffset.UtcNow };
         Store.Save(state);
         var runtime = await RefreshOverlayCoreAsync(state, cancellationToken, force: true).ConfigureAwait(false);
@@ -862,7 +862,7 @@ public sealed class ScreenEaseModule : IMptModule
         CommandRequest request,
         CancellationToken cancellationToken)
     {
-        var path = ReadString(request.Args, "path");
+        var path = SettingsJson.ReadString(request.Args, "path");
         if (string.IsNullOrWhiteSpace(path))
         {
             return Failed(request, MptErrorCodes.ValidationFailed, "A CareUEyes-compatible INI settings path is required.");
@@ -1393,40 +1393,6 @@ public sealed class ScreenEaseModule : IMptModule
     private static CommandExecutionResult Failed(CommandRequest request, string code, string message)
     {
         return new CommandExecutionResult(request.InvocationId, request.CommandId, "failed", false, "", new MptRuntimeError(code, message));
-    }
-
-    private static string? ReadString(JsonObject args, string key)
-    {
-        if (!args.TryGetPropertyValue(key, out var node) || node is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            return node.GetValue<string>();
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
-    }
-
-    private static bool? ReadBool(JsonObject args, string key)
-    {
-        if (!args.TryGetPropertyValue(key, out var node) || node is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            return node.GetValue<bool>();
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
     }
 
     private static int? ReadInt(JsonObject args, string key)
@@ -2023,12 +1989,12 @@ internal sealed record ScreenEaseProfile(
     public static ScreenEaseProfile FromJson(JsonObject node)
     {
         return new ScreenEaseProfile(
-            ScreenEaseProfileIds.Normalize(ReadString(node, "id")),
-            ReadString(node, "name") ?? ReadString(node, "id") ?? "",
-            ReadInt(node, "brightness") ?? 70,
-            ReadInt(node, "colorTemperature") ?? 5200,
-            ReadInt(node, "nightBrightness") ?? ReadInt(node, "brightness") ?? 70,
-            ReadInt(node, "nightColorTemperature") ?? ReadInt(node, "colorTemperature") ?? 5200);
+            ScreenEaseProfileIds.Normalize(SettingsJson.ReadString(node, "id")),
+            SettingsJson.ReadString(node, "name") ?? SettingsJson.ReadString(node, "id") ?? "",
+            SettingsJson.ReadInt(node, "brightness") ?? 70,
+            SettingsJson.ReadInt(node, "colorTemperature") ?? 5200,
+            SettingsJson.ReadInt(node, "nightBrightness") ?? SettingsJson.ReadInt(node, "brightness") ?? 70,
+            SettingsJson.ReadInt(node, "nightColorTemperature") ?? SettingsJson.ReadInt(node, "colorTemperature") ?? 5200);
     }
 
     public int EffectiveNightBrightness => NightBrightness < 0 ? Brightness : NightBrightness;
@@ -2043,46 +2009,6 @@ internal sealed record ScreenEaseProfile(
             : new ScreenEaseProfileValues(Brightness, ColorTemperature, false);
     }
 
-    private static string? ReadString(JsonObject args, string key)
-    {
-        if (!args.TryGetPropertyValue(key, out var node) || node is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            return node.GetValue<string>();
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
-    }
-
-    private static int? ReadInt(JsonObject args, string key)
-    {
-        if (!args.TryGetPropertyValue(key, out var node) || node is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            return node.GetValue<int>();
-        }
-        catch (InvalidOperationException)
-        {
-            try
-            {
-                return checked((int)node.GetValue<long>());
-            }
-            catch
-            {
-                return null;
-            }
-        }
-    }
 }
 
 internal static class ScreenEaseProfileIds
