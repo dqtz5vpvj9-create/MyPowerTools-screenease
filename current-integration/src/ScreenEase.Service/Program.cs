@@ -29,12 +29,6 @@ Directory.CreateDirectory(cacheRoot);
 Directory.CreateDirectory(logRoot);
 
 using var cts = new CancellationTokenSource();
-Console.CancelKeyPress += (_, e) =>
-{
-    e.Cancel = true;
-    cts.Cancel();
-};
-AppDomain.CurrentDomain.ProcessExit += (_, _) => cts.Cancel();
 
 var module = logicalOnly
     ? new ScreenEaseModule(new UnsupportedDisplayService("verification", "Logical-only service verification."))
@@ -60,7 +54,16 @@ if (!initialized.Ok)
 var pid = Environment.ProcessId;
 Console.WriteLine($"ScreenEase.Service active pid={pid} pipe={pipeName} data={toolDataRoot}");
 var settingsRevision = new SettingsRevisionStore(Path.Combine(toolDataRoot, "settings.revision"));
+ConsoleCancelEventHandler onCancelKeyPress = (_, e) =>
+{
+    e.Cancel = true;
+    cts.Cancel();
+};
+EventHandler onProcessExit = (_, _) => cts.Cancel();
+Console.CancelKeyPress += onCancelKeyPress;
+AppDomain.CurrentDomain.ProcessExit += onProcessExit;
 var pipeTask = Task.Run(() => ServePipeAsync(pipeName, module, settingsRevision, cts.Token));
+var exitCode = 0;
 
 try
 {
@@ -82,21 +85,42 @@ try
 
         // macOS readiness/liveness uses the control pipe. A repeating heartbeat
         // does no useful work and wakes an otherwise completely idle service.
-        await Task.Delay(OperatingSystem.IsMacOS() ? Timeout.Infinite : intervalMs, cts.Token);
+        var heartbeatDelay = Task.Delay(OperatingSystem.IsMacOS() ? Timeout.Infinite : intervalMs, cts.Token);
+        if (await Task.WhenAny(pipeTask, heartbeatDelay) == pipeTask)
+        {
+            await pipeTask;
+            cts.Token.ThrowIfCancellationRequested();
+            throw new IOException("ScreenEase.Service pipe listener stopped unexpectedly.");
+        }
+        await heartbeatDelay;
     }
 }
 catch (OperationCanceledException) when (cts.IsCancellationRequested)
 {
 }
+catch (Exception exception)
+{
+    Console.Error.WriteLine($"ScreenEase.Service runtime failed: {exception}");
+    exitCode = 1;
+}
 finally
 {
+    AppDomain.CurrentDomain.ProcessExit -= onProcessExit;
+    Console.CancelKeyPress -= onCancelKeyPress;
     cts.Cancel();
-    try { await pipeTask; } catch (OperationCanceledException) { }
+    try { await pipeTask; }
+    catch (OperationCanceledException) when (cts.IsCancellationRequested) { }
+    catch (Exception exception)
+    {
+        if (exitCode == 0)
+            Console.Error.WriteLine($"ScreenEase.Service pipe listener failed: {exception}");
+        exitCode = 1;
+    }
     await module.DisposeAsync(CancellationToken.None);
 }
 
 Console.WriteLine($"ScreenEase.Service stopped pid={pid}");
-return 0;
+return exitCode;
 
 static async Task AppendHeartbeatAsync(string path, string line, CancellationToken cancellationToken)
 {
@@ -120,6 +144,8 @@ static async Task ServePipeAsync(
 {
     // Keep accepting while existing clients are served. On Unix, disposing the
     // last server instance also drops queued connections from concurrent page reads.
+    using var pipeLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+    var pipeToken = pipeLifetime.Token;
     using var commandGate = new SemaphoreSlim(1, 1);
     var clients = new List<Task>();
     var listener = MptNamedPipePolicy.CreateServer(name);
@@ -130,7 +156,7 @@ static async Task ServePipeAsync(
             await listener.WaitForConnectionAsync(cancellationToken);
             var connected = listener;
             // Establish the replacement before the connected instance can close.
-            listener = MptNamedPipePolicy.CreateServer(name);
+            listener = MptNamedPipePolicy.CreateAdditionalServer(name);
             clients.RemoveAll(task => task.IsCompleted);
             clients.Add(ServeClientAsync(connected));
         }
@@ -138,6 +164,9 @@ static async Task ServePipeAsync(
     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
     finally
     {
+        // Unblock every client before draining it, including when the accept loop
+        // fails while the outer service lifetime is still running.
+        pipeLifetime.Cancel();
         await listener.DisposeAsync();
         await Task.WhenAll(clients);
     }
@@ -148,20 +177,20 @@ static async Task ServePipeAsync(
         {
             try
             {
-                while (server.IsConnected && !cancellationToken.IsCancellationRequested)
+                while (server.IsConnected && !pipeToken.IsCancellationRequested)
                 {
-                    using var request = await ReadFramedMessageAsync(server, cancellationToken);
+                    using var request = await ReadFramedMessageAsync(server, pipeToken);
                     if (request is null) break;
-                    await commandGate.WaitAsync(cancellationToken);
+                    await commandGate.WaitAsync(pipeToken);
                     try
                     {
-                        var response = await HandleRequestAsync(module, settingsRevision, request.RootElement, cancellationToken);
-                        await WriteFramedMessageAsync(server, response, cancellationToken);
+                        var response = await HandleRequestAsync(module, settingsRevision, request.RootElement, pipeToken);
+                        await WriteFramedMessageAsync(server, response, pipeToken);
                     }
                     finally { commandGate.Release(); }
                 }
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+            catch (OperationCanceledException) when (pipeToken.IsCancellationRequested) { }
             catch (Exception exception)
             {
                 Console.Error.WriteLine($"ScreenEase.Service pipe error: {exception.Message}");
