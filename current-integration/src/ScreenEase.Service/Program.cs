@@ -29,12 +29,6 @@ Directory.CreateDirectory(cacheRoot);
 Directory.CreateDirectory(logRoot);
 
 using var cts = new CancellationTokenSource();
-Console.CancelKeyPress += (_, e) =>
-{
-    e.Cancel = true;
-    cts.Cancel();
-};
-AppDomain.CurrentDomain.ProcessExit += (_, _) => cts.Cancel();
 
 var module = logicalOnly
     ? new ScreenEaseModule(new UnsupportedDisplayService("verification", "Logical-only service verification."))
@@ -60,6 +54,14 @@ if (!initialized.Ok)
 var pid = Environment.ProcessId;
 Console.WriteLine($"ScreenEase.Service active pid={pid} pipe={pipeName} data={toolDataRoot}");
 var settingsRevision = new SettingsRevisionStore(Path.Combine(toolDataRoot, "settings.revision"));
+ConsoleCancelEventHandler onCancelKeyPress = (_, e) =>
+{
+    e.Cancel = true;
+    cts.Cancel();
+};
+EventHandler onProcessExit = (_, _) => cts.Cancel();
+Console.CancelKeyPress += onCancelKeyPress;
+AppDomain.CurrentDomain.ProcessExit += onProcessExit;
 var pipeTask = Task.Run(() => ServePipeAsync(pipeName, module, settingsRevision, cts.Token));
 var exitCode = 0;
 
@@ -103,6 +105,8 @@ catch (Exception exception)
 }
 finally
 {
+    AppDomain.CurrentDomain.ProcessExit -= onProcessExit;
+    Console.CancelKeyPress -= onCancelKeyPress;
     cts.Cancel();
     try { await pipeTask; }
     catch (OperationCanceledException) when (cts.IsCancellationRequested) { }
