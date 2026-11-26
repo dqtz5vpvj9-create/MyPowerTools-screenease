@@ -108,7 +108,7 @@ public sealed class ScreenEaseModule : IMptModule
             var moduleState = usableDisplays.Length == 0 || !string.IsNullOrWhiteSpace(Store.LastRecoveryMessage) ? "degraded" : "running";
             var summary = nativeHostReady
                 ? $"ScreenEase effect is {(effect.Enabled ? "enabled" : "disabled")} with profile '{effect.ProfileId}' across {usableDisplays.Length} display(s)."
-                : $"Profile '{effect.ProfileId}' is managed in logical state; display hardware is read-only in this session.";
+                : $"Profile '{effect.ProfileId}' is managed in logical state; display hardware is read-only in this session ({FormatReadOnlyWriterReason(writer)}).";
             return new ModuleStatusSnapshot(Id, moduleState, summary, DateTimeOffset.UtcNow, checks, 0);
         }
         finally
@@ -1243,6 +1243,23 @@ public sealed class ScreenEaseModule : IMptModule
         return writer.Available
             ? writer.Message
             : $"Native display writer is unavailable: {writer.Message}";
+    }
+
+    private static string FormatReadOnlyWriterReason(DisplayWriterStatus writer)
+    {
+        var state = writer.State?.Trim() ?? "";
+        var message = writer.Message?.Trim() ?? "";
+        if (state.Length > 0 && message.Length > 0)
+        {
+            return $"{state}: {message}";
+        }
+
+        if (message.Length > 0)
+        {
+            return message;
+        }
+
+        return state.Length > 0 ? state : "unavailable";
     }
 
     private static JsonObject BuildPlan(

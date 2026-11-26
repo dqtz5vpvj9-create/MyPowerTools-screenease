@@ -79,6 +79,8 @@ public sealed partial class ScreenEaseViewModel
         }).ConfigureAwait(true);
     }
 
+    private DateTimeOffset? _refreshedExpiredEndsAt;
+
     private async Task TickReminderAsync()
     {
         if (_timerRefreshActive)
@@ -98,15 +100,23 @@ public sealed partial class ScreenEaseViewModel
             return;
         }
 
+        var endsAt = _reminderState.EndsAt.Value;
         _remainingSeconds = Math.Max(
             0,
-            checked((int)Math.Ceiling((_reminderState.EndsAt.Value - DateTimeOffset.UtcNow).TotalSeconds)));
+            checked((int)Math.Ceiling((endsAt - DateTimeOffset.UtcNow).TotalSeconds)));
         OnPropertyChanged(nameof(RemainingText));
         if (_remainingSeconds > 0)
+        {
+            _refreshedExpiredEndsAt = null;
+            return;
+        }
+
+        if (_refreshedExpiredEndsAt == endsAt)
         {
             return;
         }
 
+        _refreshedExpiredEndsAt = endsAt;
         _timerRefreshActive = true;
         try
         {
@@ -126,6 +136,13 @@ public sealed partial class ScreenEaseViewModel
     {
         _reminderState = state;
         _remainingSeconds = state.RemainingSeconds;
+        if (state.EndsAt is null ||
+            state.Phase is "stopped" or "paused" ||
+            state.EndsAt.Value > DateTimeOffset.UtcNow)
+        {
+            _refreshedExpiredEndsAt = null;
+        }
+
         NotifyTimerState();
     }
 

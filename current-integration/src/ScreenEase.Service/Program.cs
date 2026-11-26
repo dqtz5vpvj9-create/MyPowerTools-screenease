@@ -69,13 +69,12 @@ try
 {
     while (!cts.Token.IsCancellationRequested)
     {
-        var line = $"heartbeat pid={pid} ts={DateTimeOffset.UtcNow:O}";
-        Console.WriteLine(line);
-        if (!string.IsNullOrWhiteSpace(heartbeatFile))
+        if (!OperatingSystem.IsMacOS() && !string.IsNullOrWhiteSpace(heartbeatFile))
         {
+            var line = $"heartbeat pid={pid} ts={DateTimeOffset.UtcNow:O}";
             try
             {
-                await AppendHeartbeatAsync(heartbeatFile, line, cts.Token);
+                await WriteHeartbeatAsync(heartbeatFile, line, cts.Token);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -83,9 +82,12 @@ try
             }
         }
 
-        // macOS readiness/liveness uses the control pipe. A repeating heartbeat
-        // does no useful work and wakes an otherwise completely idle service.
-        var heartbeatDelay = Task.Delay(OperatingSystem.IsMacOS() ? Timeout.Infinite : intervalMs, cts.Token);
+        // Readiness/liveness uses the control pipe. Wait indefinitely unless a
+        // heartbeat file was explicitly requested, in which case overwrite at 60s.
+        var delayMs = OperatingSystem.IsMacOS() || string.IsNullOrWhiteSpace(heartbeatFile)
+            ? Timeout.Infinite
+            : Math.Max(intervalMs, 60_000);
+        var heartbeatDelay = Task.Delay(delayMs, cts.Token);
         if (await Task.WhenAny(pipeTask, heartbeatDelay) == pipeTask)
         {
             await pipeTask;
@@ -122,18 +124,17 @@ finally
 Console.WriteLine($"ScreenEase.Service stopped pid={pid}");
 return exitCode;
 
-static async Task AppendHeartbeatAsync(string path, string line, CancellationToken cancellationToken)
+static async Task WriteHeartbeatAsync(string path, string line, CancellationToken cancellationToken)
 {
-    const long maxHeartbeatBytes = 4L * 1024 * 1024;
     var parent = Path.GetDirectoryName(path);
-    if (!string.IsNullOrWhiteSpace(parent)) Directory.CreateDirectory(parent);
-    var current = new FileInfo(path);
-    if (current.Exists && current.Length >= maxHeartbeatBytes)
+    if (!string.IsNullOrWhiteSpace(parent))
     {
-        File.Move(path, path + ".1", overwrite: true);
+        Directory.CreateDirectory(parent);
     }
 
-    await File.AppendAllTextAsync(path, line + Environment.NewLine, cancellationToken);
+    var temporary = $"{path}.{Environment.ProcessId}.tmp";
+    await File.WriteAllTextAsync(temporary, line + Environment.NewLine, cancellationToken);
+    File.Move(temporary, path, overwrite: true);
 }
 
 static async Task ServePipeAsync(
